@@ -64,7 +64,7 @@ export function SmartPositionGrid({
     if (isSelected) {
       return isAnimating
         ? 'sticker-pop bg-emerald-400 border-emerald-600 text-white shadow-lg'
-        : 'bg-emerald-400 border-emerald-600 text-white shadow-lg scale-105';
+        : 'bg-emerald-400 border-emerald-600 text-white shadow-md ring-2 ring-emerald-300';
     }
     return 'bg-white border-slate-300 text-slate-800 hover:bg-blue-100 hover:border-blue-500';
   };

@@ -5,6 +5,7 @@ import { Save, Ruler, ChevronLeft } from 'lucide-react';
 import { api } from '../services/api';
 import { PageHeader, LoadingSpinner } from '../components/Layout';
 import { SheetRenderer } from '../components/render/SheetRenderer';
+import { SheetPreviewFrame } from '../components/PreviewFrame';
 import {
   buildInterlockPageConfig,
   DEFAULT_INTERLOCK_GEOMETRY,
@@ -278,8 +279,12 @@ export default function MeasureStickerSheetPage() {
         </div>
 
         <div className="card">
-          <h3 className="mb-4 text-lg font-semibold">Live Preview — {previewConfig.stickerCount} stickers</h3>
-          <div className="overflow-x-auto rounded-xl bg-slate-100 p-4">
+          <SheetPreviewFrame
+            pageWidthMm={previewConfig.pageWidth}
+            pageHeightMm={previewConfig.pageHeight}
+            scale={PREVIEW_SCALE * 0.9}
+            label={`Live Preview — ${previewConfig.stickerCount} stickers`}
+          >
             <SheetRenderer
               pageConfig={previewConfig}
               layoutConfig={{ fields: [] }}
@@ -292,7 +297,7 @@ export default function MeasureStickerSheetPage() {
               showPrintableArea
               scale={PREVIEW_SCALE * 0.9}
             />
-          </div>
+          </SheetPreviewFrame>
         </div>
 
         <button type="submit" className="btn-primary" disabled={saveMutation.isPending}>

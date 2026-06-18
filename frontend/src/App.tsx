@@ -10,6 +10,8 @@ import LayoutDesignerPage from './pages/LayoutDesignerPage';
 import SettingsPage from './pages/SettingsPage';
 import MeasureStickerSheetPage from './pages/MeasureStickerSheetPage';
 import ShopSetupPage from './pages/admin/ShopSetupPage';
+import CategoriesPage from './pages/CategoriesPage';
+import CategoryEditPage from './pages/CategoryEditPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +31,9 @@ export default function App() {
             <Route path="/" element={<PrintLabelsPage />} />
             <Route path="/labels" element={<LabelsPage />} />
 
+            <Route path="/admin/categories" element={<AdminRoute><CategoriesPage /></AdminRoute>} />
+            <Route path="/admin/categories/new" element={<AdminRoute><CategoryEditPage /></AdminRoute>} />
+            <Route path="/admin/categories/:id" element={<AdminRoute><CategoryEditPage /></AdminRoute>} />
             <Route path="/admin/formats" element={<AdminRoute><TemplatesPage /></AdminRoute>} />
             <Route path="/admin/formats/new" element={<AdminRoute><TemplateDesignerPage /></AdminRoute>} />
             <Route path="/admin/formats/:id/edit" element={<AdminRoute><TemplateDesignerPage /></AdminRoute>} />

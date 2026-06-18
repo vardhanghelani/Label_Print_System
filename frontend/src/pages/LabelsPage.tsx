@@ -1,55 +1,58 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, ChevronRight } from 'lucide-react';
 import { api } from '../services/api';
 import { PageHeader, LoadingSpinner, EmptyState } from '../components/Layout';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { filterLabels } from '../types';
-import type { Label, LabelData } from '../types';
+import type { Label, Category, CategoryFieldDefinition, ProductValues } from '../types';
+import { formatFieldValue } from '../lib/category';
 
-const EMPTY_LABEL: LabelData = {
-  productName: '',
-  designNumber: '',
-  category: '',
-  weight: '',
-  purity: '',
-  price: '',
-  makingCharge: '',
-  sku: '',
-  notes: '',
-  storeName: '',
-};
-
-const PRODUCT_FIELDS: { key: keyof LabelData; label: string }[] = [
-  { key: 'designNumber', label: 'Design Number' },
-  { key: 'category', label: 'Category' },
-  { key: 'weight', label: 'Weight' },
-  { key: 'purity', label: 'Purity' },
-  { key: 'price', label: 'Price' },
-  { key: 'makingCharge', label: 'Making Charge' },
-  { key: 'sku', label: 'SKU' },
-  { key: 'storeName', label: 'Store Name' },
-  { key: 'notes', label: 'Notes' },
-];
+function productSummary(label: Label, category?: Category): string {
+  if (!category) return label.name;
+  const parts = category.config.fields
+    .filter((f) => f.showInSearch || f.key === 'design_number' || f.key === 'price')
+    .slice(0, 3)
+    .map((f) => formatFieldValue(label.values[f.key], f.datatype))
+    .filter(Boolean);
+  return parts.join(' · ') || label.name;
+}
 
 export default function LabelsPage() {
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Label | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Label | null>(null);
   const [search, setSearch] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('');
-  const [data, setData] = useState<LabelData>({ ...EMPTY_LABEL });
+  const [categoryId, setCategoryId] = useState('');
+  const [values, setValues] = useState<ProductValues>({});
+
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: api.categories.list,
+  });
 
   const { data: labels, isLoading } = useQuery({
     queryKey: ['labels'],
-    queryFn: api.labels.list,
+    queryFn: () => api.labels.list(),
   });
 
-  const filtered = useMemo(() => filterLabels(search, labels ?? []), [search, labels]);
+  const selectedCategory = categories?.find((c) => c._id === categoryId);
+
+  const filtered = useMemo(() => {
+    if (!labels) return [];
+    if (!search.trim()) return labels;
+    return labels.filter((l) => {
+      const cat = categories?.find((c) => c._id === l.categoryId);
+      const keys = cat?.config.fields.filter((f) => f.showInSearch).map((f) => f.key) ?? [];
+      const haystack = [l.name, ...keys.map((k) => l.values[k])].join(' ').toLowerCase();
+      return haystack.includes(search.trim().toLowerCase());
+    });
+  }, [labels, search, categories]);
 
   const saveMutation = useMutation({
-    mutationFn: (payload: { name: string; data: LabelData }) =>
+    mutationFn: (payload: { name: string; categoryId: string; values: ProductValues }) =>
       editing ? api.labels.update(editing._id, payload) : api.labels.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['labels'] });
@@ -68,20 +71,90 @@ export default function LabelsPage() {
   const openCreate = () => {
     setEditing(null);
     setName('');
-    setData({ ...EMPTY_LABEL });
+    setCategoryId('');
+    setValues({});
+    setStep(1);
     setFormOpen(true);
   };
 
   const openEdit = (label: Label) => {
     setEditing(label);
     setName(label.name);
-    setData({ ...EMPTY_LABEL, ...label.data });
+    setCategoryId(label.categoryId);
+    setValues({ ...label.values });
+    setStep(2);
     setFormOpen(true);
   };
 
   const closeForm = () => {
     setFormOpen(false);
     setEditing(null);
+    setStep(1);
+  };
+
+  const renderFieldInput = (field: CategoryFieldDefinition) => {
+    const val = values[field.key];
+    const disabled = field.readOnly || !field.editable;
+    const set = (v: string | number | boolean) => setValues({ ...values, [field.key]: v });
+
+    if (field.datatype === 'dropdown') {
+      return (
+        <select
+          className="input-field"
+          value={String(val ?? '')}
+          disabled={disabled}
+          onChange={(e) => set(e.target.value)}
+          required={field.required}
+        >
+          <option value="">Select...</option>
+          {(field.options ?? []).map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      );
+    }
+    if (field.datatype === 'checkbox') {
+      return (
+        <label className="flex min-h-[52px] items-center gap-3">
+          <input
+            type="checkbox"
+            checked={!!val}
+            disabled={disabled}
+            onChange={(e) => set(e.target.checked)}
+          />
+          <span>Yes</span>
+        </label>
+      );
+    }
+    if (field.datatype === 'multiline') {
+      return (
+        <textarea
+          className="input-field min-h-[100px]"
+          value={String(val ?? '')}
+          disabled={disabled}
+          onChange={(e) => set(e.target.value)}
+          required={field.required}
+        />
+      );
+    }
+    return (
+      <input
+        type={field.datatype === 'number' || field.datatype === 'decimal' || field.datatype === 'currency' ? 'number' : 'text'}
+        className="input-field"
+        value={String(val ?? field.defaultValue ?? '')}
+        disabled={disabled}
+        onChange={(e) =>
+          set(
+            field.datatype === 'number' || field.datatype === 'decimal' || field.datatype === 'currency'
+              ? parseFloat(e.target.value) || 0
+              : e.target.value
+          )
+        }
+        required={field.required}
+      />
+    );
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -90,7 +163,7 @@ export default function LabelsPage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title="Label Data"
-        subtitle="Add product details for your stickers"
+        subtitle="Products use category fields — no fixed columns"
         action={
           <button type="button" className="btn-primary" onClick={openCreate}>
             <Plus className="h-5 w-5" />
@@ -104,8 +177,8 @@ export default function LabelsPage() {
           <Search className="absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 text-slate-400" />
           <input
             type="search"
-            className="input-field pl-14 text-xl"
-            placeholder="Search design no, ring, necklace..."
+            className="input-field pl-14"
+            placeholder="Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -114,83 +187,117 @@ export default function LabelsPage() {
 
       {formOpen && (
         <div className="card mb-6">
-          <h3 className="mb-4 text-2xl font-bold">{editing ? 'Edit Product' : 'Add New Product'}</h3>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              saveMutation.mutate({ name, data });
-            }}
-            className="space-y-5"
-          >
+          <h3 className="mb-4 text-2xl font-bold">{editing ? 'Edit Product' : 'Add Product'}</h3>
+
+          {step === 1 && !editing && (
             <div>
-              <label className="label-text">Product Name</label>
-              <input
-                className="input-field"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="e.g. Gold Ring R1001"
-              />
+              <p className="mb-4 text-lg text-slate-600">Step 1 — Select category</p>
+              <div className="grid gap-3">
+                {categories?.map((cat) => (
+                  <button
+                    key={cat._id}
+                    type="button"
+                    onClick={() => {
+                      setCategoryId(cat._id);
+                      const defaults: ProductValues = {};
+                      cat.config.fields.forEach((f) => {
+                        if (f.defaultValue) defaults[f.key] = f.defaultValue;
+                      });
+                      setValues(defaults);
+                      setStep(2);
+                    }}
+                    className="flex items-center justify-between rounded-xl border-2 border-slate-200 p-4 text-left hover:border-brand-400"
+                  >
+                    <span className="text-xl font-bold">{cat.name}</span>
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {PRODUCT_FIELDS.map(({ key, label }) => (
-                <div key={key}>
-                  <label className="label-text">{label}</label>
-                  <input
-                    className="input-field"
-                    value={data[key] ?? ''}
-                    onChange={(e) => setData({ ...data, [key]: e.target.value })}
-                    placeholder={label}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <button type="submit" className="btn-primary" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? 'Saving...' : 'Save Product'}
-              </button>
-              <button type="button" className="btn-secondary" onClick={closeForm}>
-                Cancel
-              </button>
-            </div>
-          </form>
+          )}
+
+          {step === 2 && selectedCategory && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveMutation.mutate({ name, categoryId, values });
+              }}
+              className="space-y-5"
+            >
+              <p className="text-lg text-slate-600">
+                Step 2 — {selectedCategory.name} fields
+              </p>
+              <div>
+                <label className="label-text">Product Name</label>
+                <input className="input-field" value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
+              {selectedCategory.config.fields
+                .filter((f) => f.visibleInForm)
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((field) => (
+                  <div key={field.id}>
+                    <label className="label-text">
+                      {field.name}
+                      {field.required && ' *'}
+                    </label>
+                    {renderFieldInput(field)}
+                  </div>
+                ))}
+              <div className="flex gap-3">
+                <button type="submit" className="btn-primary" disabled={saveMutation.isPending}>
+                  Save Product
+                </button>
+                {!editing && (
+                  <button type="button" className="btn-secondary" onClick={() => setStep(1)}>
+                    Back
+                  </button>
+                )}
+                <button type="button" className="btn-secondary" onClick={closeForm}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
       {!labels?.length ? (
-        <EmptyState message="No products yet. Add your first product to start printing labels." />
+        <EmptyState message="No products yet. Create a category first, then add products." />
       ) : (
         <div className="space-y-3">
-          {filtered.map((label) => (
-            <div key={label._id} className="card flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xl font-bold">{label.name}</p>
-                <p className="text-lg text-slate-600">
-                  {label.data.designNumber} · {label.data.weight} · {label.data.price}
-                </p>
+          {filtered.map((label) => {
+            const cat = categories?.find((c) => c._id === label.categoryId);
+            return (
+              <div key={label._id} className="card flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="truncate text-xl font-bold">{label.name}</p>
+                  <p className="truncate text-lg text-slate-600">
+                    {cat?.name} · {productSummary(label, cat)}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button type="button" className="btn-secondary" onClick={() => openEdit(label)}>
+                    <Pencil className="h-5 w-5" />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl p-3 text-red-500 hover:bg-red-50"
+                    onClick={() => setDeleteId(label._id)}
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button type="button" className="btn-secondary" onClick={() => openEdit(label)}>
-                  <Pencil className="h-5 w-5" />
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  className="rounded-xl p-3 text-red-500 hover:bg-red-50"
-                  onClick={() => setDeleteId(label._id)}
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       <ConfirmDialog
         open={!!deleteId}
         title="Delete Product"
-        message="Are you sure you want to delete this product?"
+        message="Are you sure?"
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         onCancel={() => setDeleteId(null)}
       />

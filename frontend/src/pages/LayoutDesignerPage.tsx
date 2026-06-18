@@ -4,41 +4,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { api } from '../services/api';
 import { PageHeader, LoadingSpinner } from '../components/Layout';
-import type { LayoutField, FieldType, PageConfig } from '../types';
-import { isJewelleryTemplate, resolveFieldValue, FIELD_TYPE_LABELS } from '../types';
+import type { LayoutField, PageConfig, Category } from '../types';
+import { isJewelleryTemplate, resolveFieldValue } from '../types';
 import type { InterlockSheetGeometry } from '../lib/geometryBuilder';
 import { mmToPx, PREVIEW_SCALE } from '../lib/units';
+import { PreviewFrame } from '../components/PreviewFrame';
 
-const ADDABLE_FIELDS: FieldType[] = [
-  'designNumber',
-  'category',
-  'weight',
-  'purity',
-  'price',
-  'makingCharge',
-  'sku',
-  'productName',
-  'storeName',
-  'notes',
-  'customField1',
-  'customField2',
-  'customField3',
-  'text',
-  'staticBranding',
-  'logo',
-];
-
-const SAMPLE_LABEL = {
-  designNumber: 'R1001',
-  category: 'Ring',
+const SAMPLE_VALUES: Record<string, string> = {
+  design_number: 'R1001',
   weight: '4.350 gm',
-  purity: '22KT',
+  purity: '22K',
   price: '₹56,000',
-  makingCharge: '₹2,500',
-  sku: 'SKU-1001',
-  productName: 'Gold Ring',
-  storeName: 'ABC Jewellers',
-  notes: 'Hallmarked',
+  size: '12',
+  length: '18 inch',
 };
 
 function generateId() {
@@ -54,6 +32,7 @@ export default function LayoutDesignerPage() {
   const [name, setName] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [fields, setFields] = useState<LayoutField[]>([]);
+  const [layoutCategoryId, setLayoutCategoryId] = useState('');
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -69,6 +48,11 @@ export default function LayoutDesignerPage() {
     queryFn: api.templates.list,
   });
 
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: api.categories.list,
+  });
+
   const { data: template } = useQuery({
     queryKey: ['template', templateId],
     queryFn: () => api.templates.get(templateId),
@@ -80,6 +64,7 @@ export default function LayoutDesignerPage() {
       setName(layout.name);
       setTemplateId(layout.templateId);
       setFields(layout.config.fields);
+      setLayoutCategoryId(layout.config.categoryId ?? '');
     }
   }, [layout]);
 
@@ -90,8 +75,11 @@ export default function LayoutDesignerPage() {
   }, [isNew, templates, templateId]);
 
   const saveMutation = useMutation({
-    mutationFn: (data: { name: string; templateId: string; config: { fields: LayoutField[] } }) =>
-      isNew ? api.layouts.create(data) : api.layouts.update(id!, data),
+    mutationFn: (data: {
+      name: string;
+      templateId: string;
+      config: { fields: LayoutField[]; categoryId?: string };
+    }) => (isNew ? api.layouts.create(data) : api.layouts.update(id!, data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['layouts'] });
       navigate('/admin/designs');
@@ -110,12 +98,39 @@ export default function LayoutDesignerPage() {
     return field.section === 'B' ? geo.sectionA.x + geo.sectionA.width : 0;
   };
 
-  const addField = (type: FieldType) => {
+  const selectedCategory = categories?.find((c) => c._id === layoutCategoryId);
+  const labelFields =
+    selectedCategory?.config.fields.filter((f) => f.showInLabel).sort((a, b) => a.sortOrder - b.sortOrder) ??
+    [];
+
+  const addCategoryField = (fieldKey: string, label: string) => {
+    if (!pageConfig) return;
+    const newField: LayoutField = {
+      id: generateId(),
+      type: 'categoryField',
+      fieldKey,
+      label,
+      categoryId: layoutCategoryId || undefined,
+      section: isJewellery ? 'A' : 'full',
+      x: 0.5,
+      y: 0.5 + fields.length * 2,
+      width: isJewellery ? 28 : pageConfig.stickerWidth - 4,
+      height: isJewellery ? 3.5 : 6,
+      fontSize: isJewellery ? 7 : 9,
+      bold: false,
+      italic: false,
+      alignment: 'left',
+    };
+    setFields([...fields, newField]);
+    setSelectedFieldId(newField.id);
+  };
+
+  const addStaticField = (type: 'text' | 'staticBranding' | 'logo') => {
     if (!pageConfig) return;
     const newField: LayoutField = {
       id: generateId(),
       type,
-      label: FIELD_TYPE_LABELS[type],
+      label: type === 'text' ? 'Text' : type === 'staticBranding' ? 'Static Branding' : 'Logo',
       section: isJewellery ? 'A' : 'full',
       x: 0.5,
       y: 0.5 + fields.length * 2,
@@ -202,7 +217,11 @@ export default function LayoutDesignerPage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          saveMutation.mutate({ name, templateId, config: { fields } });
+          saveMutation.mutate({
+            name,
+            templateId,
+            config: { fields, categoryId: layoutCategoryId || undefined },
+          });
         }}
       >
         <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -232,18 +251,59 @@ export default function LayoutDesignerPage() {
               </select>
             </div>
 
-            <h3 className="mb-2 font-semibold">Add Field</h3>
+            <div className="mb-4">
+              <label className="label-text">Category</label>
+              <select
+                className="input-field"
+                value={layoutCategoryId}
+                onChange={(e) => setLayoutCategoryId(e.target.value)}
+              >
+                <option value="">Select category for fields</option>
+                {(categories ?? []).map((c: Category) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                Fields available in the sidebar come from this category.
+              </p>
+            </div>
+
+            <h3 className="mb-2 font-semibold">Category Fields</h3>
+            {!layoutCategoryId ? (
+              <p className="mb-4 text-sm text-slate-500">Select a category to add product fields.</p>
+            ) : labelFields.length === 0 ? (
+              <p className="mb-4 text-sm text-slate-500">No fields marked &quot;Show In Label&quot; for this category.</p>
+            ) : (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {labelFields.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => addCategoryField(f.key, f.name)}
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
+                    disabled={!pageConfig}
+                  >
+                    <Plus className="mr-1 inline h-3 w-3" />
+                    {f.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <h3 className="mb-2 font-semibold">Static Elements</h3>
             <div className="flex flex-wrap gap-2">
-              {ADDABLE_FIELDS.map((type) => (
+              {(['text', 'staticBranding', 'logo'] as const).map((type) => (
                 <button
                   key={type}
                   type="button"
-                  onClick={() => addField(type)}
+                  onClick={() => addStaticField(type)}
                   className="rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
                   disabled={!pageConfig}
                 >
                   <Plus className="mr-1 inline h-3 w-3" />
-                  {FIELD_TYPE_LABELS[type]}
+                  {type === 'text' ? 'Text' : type === 'staticBranding' ? 'Branding' : 'Logo'}
                 </button>
               ))}
             </div>
@@ -402,10 +462,10 @@ export default function LayoutDesignerPage() {
           <div className="card lg:col-span-2">
             <h3 className="mb-4 font-semibold">Sticker Preview (drag fields to move)</h3>
             {pageConfig ? (
-              <div className="overflow-auto rounded-xl bg-slate-100 p-6">
+              <PreviewFrame contentWidth={stickerW} contentHeight={stickerH} maxHeight={360}>
                 <div
                   ref={canvasRef}
-                  className="relative mx-auto border-2 border-dashed border-slate-300 bg-white"
+                  className="relative border-2 border-dashed border-slate-300 bg-white"
                   style={{ width: stickerW, height: stickerH }}
                   onClick={() => setSelectedFieldId(null)}
                 >
@@ -444,7 +504,7 @@ export default function LayoutDesignerPage() {
                       <GripVertical className="absolute -left-1 top-0 h-full w-3 text-slate-400" />
                       <span className="block truncate px-1">
                         {(() => {
-                          const val = resolveFieldValue(field, SAMPLE_LABEL);
+                          const val = resolveFieldValue(field, SAMPLE_VALUES);
                           if (val) return val;
                           if (field.type === 'text' || field.type === 'staticBranding') return field.staticText;
                           return `[${field.label}]`;
@@ -453,14 +513,16 @@ export default function LayoutDesignerPage() {
                     </div>
                   ))}
                 </div>
-                <p className="mt-2 text-center text-sm text-slate-500">
-                  {isJewellery && pageConfig?.geometry
-                    ? `Broad printable area: ${pageConfig.geometry.broadWidth} × ${pageConfig.geometry.broadHeight} mm (Section A + B)`
-                    : `Sticker size: ${pageConfig.stickerWidth} × ${pageConfig.stickerHeight} mm`}
-                </p>
-              </div>
+              </PreviewFrame>
             ) : (
               <p className="text-slate-500">Select a template to design the layout.</p>
+            )}
+            {pageConfig && (
+              <p className="mt-2 text-center text-sm text-slate-500">
+                {isJewellery && pageConfig.geometry
+                  ? `Broad printable area: ${pageConfig.geometry.broadWidth} × ${pageConfig.geometry.broadHeight} mm (Section A + B)`
+                  : `Sticker size: ${pageConfig.stickerWidth} × ${pageConfig.stickerHeight} mm`}
+              </p>
             )}
           </div>
         </div>

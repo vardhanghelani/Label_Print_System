@@ -6,6 +6,7 @@ import { usePrintStore } from '../stores/printStore';
 import { PageHeader, LoadingSpinner } from '../components/Layout';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { CalibrationSheetRenderer } from '../components/render/CalibrationSheetRenderer';
+import { SheetPreviewFrame } from '../components/PreviewFrame';
 import { getEffectivePageConfig } from '../types';
 import type { CalibrationSettings, Template } from '../types';
 import { DEFAULT_CALIBRATION } from '../types';
@@ -165,14 +166,19 @@ export default function SettingsPage() {
         <div className="card">
           <h3 className="mb-4 text-lg font-semibold">Live Preview</h3>
           {pageConfig ? (
-            <div className="overflow-x-auto rounded-xl bg-slate-100 p-4">
+            <SheetPreviewFrame
+              pageWidthMm={pageConfig.pageWidth}
+              pageHeightMm={pageConfig.pageHeight}
+              scale={2}
+              label="Calibration sheet"
+            >
               <CalibrationSheetRenderer
                 pageConfig={pageConfig}
                 calibration={form}
                 scale={2}
                 unit="px"
               />
-            </div>
+            </SheetPreviewFrame>
           ) : (
             <p className="text-slate-500">No template available for calibration preview.</p>
           )}

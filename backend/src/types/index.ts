@@ -67,25 +67,7 @@ export interface PageConfig {
   stickers?: StickerDefinition[];
 }
 
-export type FieldType =
-  | 'productName'
-  | 'designNumber'
-  | 'category'
-  | 'weight'
-  | 'purity'
-  | 'price'
-  | 'makingCharge'
-  | 'sku'
-  | 'notes'
-  | 'storeName'
-  | 'barcode'
-  | 'qrCode'
-  | 'customField1'
-  | 'customField2'
-  | 'customField3'
-  | 'text'
-  | 'staticBranding'
-  | 'logo';
+export type LayoutFieldType = 'categoryField' | 'text' | 'staticBranding' | 'logo';
 
 export type TextAlignment = 'left' | 'center' | 'right';
 
@@ -93,9 +75,11 @@ export type LayoutSection = 'A' | 'B' | 'full';
 
 export interface LayoutField {
   id: string;
-  type: FieldType;
+  type: LayoutFieldType;
   label: string;
-  /** mm from section or printable area origin */
+  /** Key in product.values when type is categoryField */
+  fieldKey?: string;
+  categoryId?: string;
   x: number;
   y: number;
   width: number;
@@ -113,25 +97,16 @@ export interface LayoutField {
 
 export interface LayoutConfig {
   fields: LayoutField[];
+  categoryId?: string;
 }
 
-export interface LabelData {
-  productName?: string;
-  designNumber?: string;
-  category?: string;
-  weight?: string;
-  purity?: string;
-  price?: string;
-  makingCharge?: string;
-  sku?: string;
-  notes?: string;
-  storeName?: string;
-  barcode?: string;
-  qrCode?: string;
-  customField1?: string;
-  customField2?: string;
-  customField3?: string;
-}
+export type { ProductValues, CategoryFieldDefinition, FieldDatatype } from './category.js';
+export { slugifyFieldKey, formatFieldValue, buildSearchHaystack } from './category.js';
+import type { ProductValues } from './category.js';
+import { buildSearchHaystack } from './category.js';
+
+/** @deprecated use ProductValues on Label */
+export type LabelData = ProductValues;
 
 export type PrintMode = 'single' | 'selected' | 'startFrom';
 
@@ -157,22 +132,8 @@ export interface PrintJobPayload {
   usedPositions: number[];
 }
 
-export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
-  productName: 'Product Name',
-  designNumber: 'Design Number',
-  category: 'Category',
-  weight: 'Weight',
-  purity: 'Purity',
-  price: 'Price',
-  makingCharge: 'Making Charge',
-  sku: 'SKU',
-  notes: 'Notes',
-  storeName: 'Store Name',
-  barcode: 'Barcode',
-  qrCode: 'QR Code',
-  customField1: 'Custom Field 1',
-  customField2: 'Custom Field 2',
-  customField3: 'Custom Field 3',
+export const FIELD_TYPE_LABELS: Record<LayoutFieldType, string> = {
+  categoryField: 'Category Field',
   text: 'Text',
   staticBranding: 'Static Branding',
   logo: 'Logo',
@@ -233,34 +194,18 @@ export function getPositionCoordinates(
   return { x, y };
 }
 
-export function resolveFieldValue(field: LayoutField, label: LabelData): string {
+export function resolveFieldValue(field: LayoutField, values: ProductValues): string {
   if (field.type === 'text' || field.type === 'staticBranding') {
     return field.staticText ?? '';
   }
   if (field.type === 'logo') {
     return field.logoUrl ?? '';
   }
-
-  const map: Record<string, keyof LabelData | undefined> = {
-    productName: 'productName',
-    designNumber: 'designNumber',
-    category: 'category',
-    weight: 'weight',
-    purity: 'purity',
-    price: 'price',
-    makingCharge: 'makingCharge',
-    sku: 'sku',
-    notes: 'notes',
-    storeName: 'storeName',
-    barcode: 'barcode',
-    qrCode: 'qrCode',
-    customField1: 'customField1',
-    customField2: 'customField2',
-    customField3: 'customField3',
-  };
-
-  const key = map[field.type];
-  return key ? (label[key] ?? '') : '';
+  if (field.type === 'categoryField' && field.fieldKey) {
+    const v = values[field.fieldKey];
+    return v === null || v === undefined ? '' : String(v);
+  }
+  return '';
 }
 
 export function computePrintPositions(
@@ -342,26 +287,15 @@ export function findFirstAvailablePosition(
   return 1;
 }
 
-export function filterLabels<T extends { name: string; data: LabelData }>(
+export function filterLabels<T extends { name: string; categoryId?: string; values?: ProductValues }>(
   search: string,
-  labels: T[]
+  labels: T[],
+  searchableKeys: string[] = Object.keys(labels[0]?.values ?? {})
 ): T[] {
   const q = search.trim().toLowerCase();
   if (!q) return labels;
   return labels.filter((l) => {
-    const haystack = [
-      l.name,
-      l.data.productName,
-      l.data.designNumber,
-      l.data.category,
-      l.data.weight,
-      l.data.purity,
-      l.data.price,
-      l.data.sku,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
+    const haystack = buildSearchHaystack(l.name, undefined, l.values ?? {}, searchableKeys);
     return haystack.includes(q);
   });
 }

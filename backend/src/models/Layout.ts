@@ -25,6 +25,8 @@ const layoutFieldSchema = new Schema(
     section: { type: String, enum: ['A', 'B', 'full'] },
     rotation: { type: Number },
     lineSpacing: { type: Number },
+    fieldKey: { type: String },
+    categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
     staticText: { type: String },
     logoUrl: { type: String },
   },
@@ -36,6 +38,7 @@ const layoutSchema = new Schema<ILayout>(
     name: { type: String, required: true, trim: true },
     templateId: { type: Schema.Types.ObjectId, ref: 'Template', required: true },
     config: {
+      categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
       fields: { type: [layoutFieldSchema], default: [] },
     },
   },

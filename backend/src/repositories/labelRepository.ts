@@ -1,8 +1,9 @@
 import { Label, type ILabel } from '../models/Label.js';
 
 export class LabelRepository {
-  async findAll(): Promise<ILabel[]> {
-    return Label.find().sort({ updatedAt: -1 });
+  async findAll(categoryId?: string): Promise<ILabel[]> {
+    const filter = categoryId ? { categoryId } : {};
+    return Label.find(filter).sort({ updatedAt: -1 });
   }
 
   async findById(id: string): Promise<ILabel | null> {

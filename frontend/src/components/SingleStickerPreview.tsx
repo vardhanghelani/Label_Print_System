@@ -8,6 +8,7 @@ import {
 } from '../types';
 import { resolveStickers } from '../lib/geometryBuilder';
 import { mmToPx } from '../lib/units';
+import { PreviewFrame } from './PreviewFrame';
 
 interface SingleStickerPreviewProps {
   pageConfig: PageConfig;
@@ -96,11 +97,11 @@ export function SingleStickerPreview({
     const h = mmToPx(totalH, PREVIEW_SCALE);
 
     return (
-      <div className="text-center">
-        <p className="mb-4 text-xl font-bold text-slate-800">{title}</p>
-        <div className="inline-block rounded-2xl bg-slate-100 p-6 shadow-inner">
+      <div className="preview-frame card p-4">
+        <p className="preview-frame-label">{title}</p>
+        <PreviewFrame contentWidth={w} contentHeight={h} maxHeight={220}>
           <div
-            className="relative overflow-visible rounded-xl border-2 border-slate-400 bg-slate-200 shadow-lg"
+            className="relative overflow-hidden rounded-xl border-2 border-slate-400 bg-slate-200"
             style={{ width: w, height: h }}
           >
             <div
@@ -141,10 +142,10 @@ export function SingleStickerPreview({
               );
             })}
           </div>
-          <p className="mt-3 text-base text-slate-500">
-            Broad area: {geo.broadWidth} × {geo.broadHeight} mm (Section A + B)
-          </p>
-        </div>
+        </PreviewFrame>
+        <p className="mt-2 text-center text-sm text-slate-500">
+          Broad area: {geo.broadWidth} × {geo.broadHeight} mm (Section A + B)
+        </p>
       </div>
     );
   }
@@ -153,21 +154,21 @@ export function SingleStickerPreview({
   const h = mmToPx(effectiveConfig.stickerHeight, PREVIEW_SCALE);
 
   return (
-    <div className="text-center">
-      <p className="mb-4 text-xl font-bold text-slate-800">{title}</p>
-      <div className="inline-block rounded-2xl bg-slate-100 p-6 shadow-inner">
+    <div className="preview-frame card p-4">
+      <p className="preview-frame-label">{title}</p>
+      <PreviewFrame contentWidth={w} contentHeight={h} maxHeight={220}>
         <div
-          className="relative overflow-hidden rounded-xl border-2 border-slate-400 bg-white shadow-lg"
+          className="relative overflow-hidden rounded-xl border-2 border-slate-400 bg-white"
           style={{ width: w, height: h }}
         >
           {layoutConfig.fields.map((field) =>
             renderFieldAt(field, labelData, 0, 0, brandName, logoUrl)
           )}
         </div>
-        <p className="mt-3 text-base text-slate-500">
-          Actual sticker size: {effectiveConfig.stickerWidth} × {effectiveConfig.stickerHeight} mm
-        </p>
-      </div>
+      </PreviewFrame>
+      <p className="mt-2 text-center text-sm text-slate-500">
+        Actual sticker size: {effectiveConfig.stickerWidth} × {effectiveConfig.stickerHeight} mm
+      </p>
     </div>
   );
 }

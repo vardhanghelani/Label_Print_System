@@ -2,11 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config/index.js';
 import { connectDatabase } from './config/database.js';
+import { runAllMigrations } from './scripts/migrateLegacyProducts.js';
 import { errorHandler, notFoundHandler } from './middleware/index.js';
 import templatesRouter from './routes/templates.js';
 import layoutsRouter from './routes/layouts.js';
 import labelsRouter from './routes/labels.js';
 import printJobsRouter from './routes/printJobs.js';
+import categoriesRouter from './routes/categories.js';
 import settingsRouter from './routes/settings.js';
 
 const app = express();
@@ -22,6 +24,7 @@ app.use('/api/templates', templatesRouter);
 app.use('/api/layouts', layoutsRouter);
 app.use('/api/labels', labelsRouter);
 app.use('/api/print-jobs', printJobsRouter);
+app.use('/api/categories', categoriesRouter);
 app.use('/api/settings', settingsRouter);
 
 app.use(notFoundHandler);
@@ -30,6 +33,10 @@ app.use(errorHandler);
 async function start() {
   try {
     await connectDatabase(config.mongoUri);
+    const { products, layouts } = await runAllMigrations();
+    if (products > 0 || layouts > 0) {
+      console.log(`Migration: ${products} product(s), ${layouts} layout(s) updated.`);
+    }
     app.listen(config.port, () => {
       console.log(`Server running on http://localhost:${config.port}`);
     });

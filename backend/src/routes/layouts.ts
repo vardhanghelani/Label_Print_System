@@ -20,6 +20,8 @@ const layoutFieldSchema = z.object({
   section: z.enum(['A', 'B', 'full']).optional(),
   rotation: z.number().optional(),
   lineSpacing: z.number().optional(),
+  fieldKey: z.string().optional(),
+  categoryId: z.string().optional(),
   staticText: z.string().optional(),
   logoUrl: z.string().optional(),
 });
@@ -28,6 +30,7 @@ const createLayoutSchema = z.object({
   name: z.string().min(1),
   templateId: z.string(),
   config: z.object({
+    categoryId: z.string().optional(),
     fields: z.array(layoutFieldSchema),
   }),
 });

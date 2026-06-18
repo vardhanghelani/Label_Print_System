@@ -3,9 +3,11 @@ import { config } from './config/index.js';
 import { Template } from './models/Template.js';
 import { Layout } from './models/Layout.js';
 import { Label } from './models/Label.js';
+import { Category } from './models/Category.js';
 import { Settings } from './models/Settings.js';
 import { User } from './models/User.js';
 import { DEFAULT_CALIBRATION, buildInterlockPageConfig } from './types/index.js';
+import type { CategoryFieldDefinition } from './types/category.js';
 
 const SAMPLE_TEMPLATES = [
   {
@@ -46,46 +48,56 @@ const SAMPLE_TEMPLATES = [
       printableAreaHeight: 281,
     },
   },
-  {
-    name: 'Jewellery Tag Sheet',
-    description: 'Large tag format for necklaces and bracelets',
-    config: {
-      pageWidth: 210,
-      pageHeight: 297,
-      rows: 4,
-      columns: 3,
-      stickerWidth: 60,
-      stickerHeight: 40,
-      horizontalGap: 5,
-      verticalGap: 5,
-      topMargin: 12,
-      bottomMargin: 12,
-      leftMargin: 10,
-      rightMargin: 10,
-      printableAreaWidth: 190,
-      printableAreaHeight: 273,
-    },
-  },
-  {
-    name: 'Ring Tag Sheet',
-    description: 'Small ring tags (8×12 grid)',
-    config: {
-      pageWidth: 210,
-      pageHeight: 297,
-      rows: 12,
-      columns: 8,
-      stickerWidth: 22,
-      stickerHeight: 15,
-      horizontalGap: 1.5,
-      verticalGap: 1.5,
-      topMargin: 8,
-      bottomMargin: 8,
-      leftMargin: 5,
-      rightMargin: 5,
-      printableAreaWidth: 200,
-      printableAreaHeight: 281,
-    },
-  },
+];
+
+function field(
+  id: string,
+  name: string,
+  key: string,
+  datatype: CategoryFieldDefinition['datatype'],
+  opts: Partial<CategoryFieldDefinition> = {}
+): CategoryFieldDefinition {
+  return {
+    id,
+    name,
+    key,
+    datatype,
+    required: opts.required ?? false,
+    showInSearch: opts.showInSearch ?? false,
+    showInLabel: opts.showInLabel ?? true,
+    visibleInForm: opts.visibleInForm ?? true,
+    editable: opts.editable ?? true,
+    readOnly: opts.readOnly ?? false,
+    sortOrder: opts.sortOrder ?? 0,
+    options: opts.options,
+    defaultValue: opts.defaultValue,
+  };
+}
+
+const RING_FIELDS: CategoryFieldDefinition[] = [
+  field('rf1', 'Design Number', 'design_number', 'text', { showInSearch: true, required: true, sortOrder: 0 }),
+  field('rf2', 'Weight', 'weight', 'text', { showInLabel: true, sortOrder: 1 }),
+  field('rf3', 'Size', 'size', 'number', { sortOrder: 2 }),
+  field('rf4', 'Purity', 'purity', 'dropdown', { options: ['18K', '22K', '24K'], sortOrder: 3 }),
+  field('rf5', 'Price', 'price', 'currency', { showInSearch: true, sortOrder: 4 }),
+  field('rf6', 'Making Charge', 'making_charge', 'currency', { sortOrder: 5 }),
+];
+
+const NECKLACE_FIELDS: CategoryFieldDefinition[] = [
+  field('nf1', 'Design Number', 'design_number', 'text', { showInSearch: true, required: true, sortOrder: 0 }),
+  field('nf2', 'Length', 'length', 'text', { sortOrder: 1 }),
+  field('nf3', 'Weight', 'weight', 'text', { sortOrder: 2 }),
+  field('nf4', 'Purity', 'purity', 'dropdown', { options: ['18K', '22K'], sortOrder: 3 }),
+  field('nf5', 'Price', 'price', 'currency', { showInSearch: true, sortOrder: 4 }),
+];
+
+const LEGACY_FIELDS: CategoryFieldDefinition[] = [
+  field('lf1', 'Design Number', 'design_number', 'text', { showInSearch: true, sortOrder: 0 }),
+  field('lf2', 'Weight', 'weight', 'text', { sortOrder: 1 }),
+  field('lf3', 'Purity', 'purity', 'text', { sortOrder: 2 }),
+  field('lf4', 'Price', 'price', 'text', { showInSearch: true, sortOrder: 3 }),
+  field('lf5', 'SKU', 'sku', 'text', { showInSearch: true, sortOrder: 4 }),
+  field('lf6', 'Notes', 'notes', 'multiline', { sortOrder: 5 }),
 ];
 
 async function seed() {
@@ -95,6 +107,7 @@ async function seed() {
     Template.deleteMany({}),
     Layout.deleteMany({}),
     Label.deleteMany({}),
+    Category.deleteMany({}),
     Settings.deleteMany({}),
     User.deleteMany({}),
   ]);
@@ -102,14 +115,34 @@ async function seed() {
   const templates = await Template.insertMany(SAMPLE_TEMPLATES);
   const defaultTemplate = templates[0];
 
+  const ringCategory = await Category.create({
+    name: 'Ring',
+    description: 'Gold and diamond rings',
+    config: { fields: RING_FIELDS },
+  });
+
+  const necklaceCategory = await Category.create({
+    name: 'Necklace',
+    description: 'Necklaces and chains',
+    config: { fields: NECKLACE_FIELDS },
+  });
+
+  const legacyCategory = await Category.create({
+    name: 'Legacy Jewellery',
+    description: 'Migrated from previous fixed-field products',
+    config: { fields: LEGACY_FIELDS },
+  });
+
   const defaultLayout = await Layout.create({
-    name: 'Jewellery Tag Layout',
+    name: 'Ring Label Layout',
     templateId: defaultTemplate._id,
     config: {
+      categoryId: ringCategory._id,
       fields: [
         {
           id: 'f1',
-          type: 'designNumber',
+          type: 'categoryField',
+          fieldKey: 'design_number',
           label: 'Design Number',
           section: 'A',
           x: 0.5,
@@ -123,7 +156,8 @@ async function seed() {
         },
         {
           id: 'f2',
-          type: 'weight',
+          type: 'categoryField',
+          fieldKey: 'weight',
           label: 'Weight',
           section: 'A',
           x: 0.5,
@@ -137,7 +171,8 @@ async function seed() {
         },
         {
           id: 'f3',
-          type: 'price',
+          type: 'categoryField',
+          fieldKey: 'price',
           label: 'Price',
           section: 'B',
           x: 0.5,
@@ -151,7 +186,8 @@ async function seed() {
         },
         {
           id: 'f4',
-          type: 'purity',
+          type: 'categoryField',
+          fieldKey: 'purity',
           label: 'Purity',
           section: 'B',
           x: 0.5,
@@ -167,45 +203,51 @@ async function seed() {
     },
   });
 
+  await Category.findByIdAndUpdate(ringCategory._id, { defaultLayoutId: defaultLayout._id });
+
   await Label.insertMany([
     {
-      name: 'Ring R1001',
-      data: {
-        designNumber: 'R1001',
+      name: 'Gold Ring R1001',
+      categoryId: ringCategory._id,
+      values: {
+        design_number: 'R1001',
         weight: '4.350 gm',
-        purity: '22KT',
+        size: 12,
+        purity: '22K',
         price: '₹56,000',
-        productName: 'Gold Ring',
+        making_charge: '₹2,500',
       },
     },
     {
-      name: 'Necklace N2002',
-      data: {
-        designNumber: 'N2002',
+      name: 'Diamond Necklace N2002',
+      categoryId: necklaceCategory._id,
+      values: {
+        design_number: 'N2002',
+        length: '18 inch',
         weight: '12.800 gm',
-        purity: '18KT',
+        purity: '18K',
         price: '₹1,25,000',
-        productName: 'Diamond Necklace',
       },
     },
     {
-      name: 'Bracelet B3003',
-      data: {
-        designNumber: 'B3003',
+      name: 'Gold Bracelet B3003',
+      categoryId: legacyCategory._id,
+      values: {
+        design_number: 'B3003',
         weight: '8.200 gm',
         purity: '22KT',
         price: '₹78,500',
-        productName: 'Gold Bracelet',
       },
     },
     {
-      name: 'Earrings E4004',
-      data: {
-        designNumber: 'E4004',
+      name: 'Gold Earrings E4004',
+      categoryId: ringCategory._id,
+      values: {
+        design_number: 'E4004',
         weight: '3.100 gm',
-        purity: '22KT',
+        size: 8,
+        purity: '22K',
         price: '₹42,000',
-        productName: 'Gold Earrings',
       },
     },
   ]);
@@ -230,8 +272,9 @@ async function seed() {
 
   console.log('Seed completed successfully');
   console.log(`  Templates: ${templates.length}`);
+  console.log(`  Categories: 3`);
   console.log(`  Default layout: ${defaultLayout.name}`);
-  console.log(`  Labels: 4`);
+  console.log(`  Products: 4`);
 
   await disconnectDatabase();
 }

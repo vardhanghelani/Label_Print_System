@@ -1,13 +1,8 @@
-import type {
-  Label,
-  Template,
-  Layout,
-  PreviewData,
-  LayoutConfig,
-  LabelData,
-} from '../types';
+import type { Label, Template, Layout, PreviewData, LayoutConfig, ProductValues } from '../types';
 import { DEFAULT_CALIBRATION } from '../types';
 import { buildInterlockPageConfig } from '../lib/geometryBuilder';
+
+export const DEMO_CATEGORY_ID = 'demo-ring';
 
 export const DEMO_TEMPLATE_CONFIG = buildInterlockPageConfig(137, 172, {
   stickerCount: 14,
@@ -25,10 +20,12 @@ export const DEMO_TEMPLATE_CONFIG = buildInterlockPageConfig(137, 172, {
 });
 
 export const DEMO_LAYOUT_CONFIG: LayoutConfig = {
+  categoryId: DEMO_CATEGORY_ID,
   fields: [
     {
       id: 'd1',
-      type: 'designNumber',
+      type: 'categoryField',
+      fieldKey: 'design_number',
       label: 'Design Number',
       section: 'A',
       x: 0.5,
@@ -42,7 +39,8 @@ export const DEMO_LAYOUT_CONFIG: LayoutConfig = {
     },
     {
       id: 'd2',
-      type: 'weight',
+      type: 'categoryField',
+      fieldKey: 'weight',
       label: 'Weight',
       section: 'A',
       x: 0.5,
@@ -56,7 +54,8 @@ export const DEMO_LAYOUT_CONFIG: LayoutConfig = {
     },
     {
       id: 'd3',
-      type: 'price',
+      type: 'categoryField',
+      fieldKey: 'price',
       label: 'Price',
       section: 'B',
       x: 0.5,
@@ -70,7 +69,8 @@ export const DEMO_LAYOUT_CONFIG: LayoutConfig = {
     },
     {
       id: 'd4',
-      type: 'purity',
+      type: 'categoryField',
+      fieldKey: 'purity',
       label: 'Purity',
       section: 'B',
       x: 0.5,
@@ -89,35 +89,40 @@ export const DEMO_PRODUCTS: Label[] = [
   {
     _id: 'demo-1',
     name: 'Gold Ring R1001',
-    data: { designNumber: 'R1001', weight: '4.350 gm', purity: '22KT', price: '₹56,000', productName: 'Gold Ring' },
+    categoryId: DEMO_CATEGORY_ID,
+    values: { design_number: 'R1001', weight: '4.350 gm', purity: '22K', price: '₹56,000' },
     createdAt: '',
     updatedAt: '',
   },
   {
     _id: 'demo-2',
     name: 'Diamond Necklace N2002',
-    data: { designNumber: 'N2002', weight: '12.800 gm', purity: '18KT', price: '₹1,25,000', productName: 'Necklace' },
+    categoryId: DEMO_CATEGORY_ID,
+    values: { design_number: 'N2002', weight: '12.800 gm', purity: '18K', price: '₹1,25,000' },
     createdAt: '',
     updatedAt: '',
   },
   {
     _id: 'demo-3',
     name: 'Gold Bracelet B3003',
-    data: { designNumber: 'B3003', weight: '8.200 gm', purity: '22KT', price: '₹78,500', productName: 'Bracelet' },
+    categoryId: DEMO_CATEGORY_ID,
+    values: { design_number: 'B3003', weight: '8.200 gm', purity: '22K', price: '₹78,500' },
     createdAt: '',
     updatedAt: '',
   },
   {
     _id: 'demo-4',
     name: 'Gold Earrings E4004',
-    data: { designNumber: 'E4004', weight: '3.100 gm', purity: '22KT', price: '₹42,000', productName: 'Earrings' },
+    categoryId: DEMO_CATEGORY_ID,
+    values: { design_number: 'E4004', weight: '3.100 gm', purity: '22K', price: '₹42,000' },
     createdAt: '',
     updatedAt: '',
   },
   {
     _id: 'demo-5',
     name: 'Gold Chain C5005',
-    data: { designNumber: 'C5005', weight: '6.500 gm', purity: '22KT', price: '₹65,000', productName: 'Chain' },
+    categoryId: DEMO_CATEGORY_ID,
+    values: { design_number: 'C5005', weight: '6.500 gm', purity: '22K', price: '₹65,000' },
     createdAt: '',
     updatedAt: '',
   },
@@ -134,7 +139,7 @@ export const DEMO_TEMPLATE: Template = {
 
 export const DEMO_LAYOUT: Layout = {
   _id: 'demo-layout',
-  name: 'Jewellery Layout (Demo)',
+  name: 'Ring Layout (Demo)',
   templateId: 'demo-template',
   config: DEMO_LAYOUT_CONFIG,
   createdAt: '',
@@ -167,6 +172,11 @@ export function getDemoLabelById(id: string): Label | undefined {
   return DEMO_PRODUCTS.find((p) => p._id === id);
 }
 
-export function getDemoLabelData(id: string): LabelData | null {
-  return getDemoLabelById(id)?.data ?? null;
+export function getDemoLabelData(id: string): ProductValues | null {
+  return getDemoLabelById(id)?.values ?? null;
+}
+
+export function productDisplayLine(label: Label): string {
+  const v = label.values;
+  return [v.design_number, v.weight, v.price].filter(Boolean).join(' · ');
 }

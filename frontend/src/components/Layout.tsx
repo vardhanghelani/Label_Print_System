@@ -1,7 +1,7 @@
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Printer, Tags, FileStack, PenTool, Sliders, Store, LogOut, Lock } from 'lucide-react';
+import { Printer, Tags, FileStack, PenTool, Sliders, Store, LogOut, Lock, FolderTree } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { AdminLoginModal } from './AdminLoginModal';
 import { api } from '../services/api';
@@ -12,6 +12,7 @@ const userNav = [
 ];
 
 const adminNav = [
+  { to: '/admin/categories', label: 'Categories', icon: FolderTree },
   { to: '/admin/formats', label: 'Sticker Formats', icon: FileStack },
   { to: '/admin/designs', label: 'Label Design', icon: PenTool },
   { to: '/admin/adjustment', label: 'Print Adjustment', icon: Sliders },
@@ -106,7 +107,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="no-print ml-72 flex-1 p-6 sm:p-8">{children}</main>
+      <main className="app-main no-print ml-72 min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
 
       <AdminLoginModal
         open={showLogin}

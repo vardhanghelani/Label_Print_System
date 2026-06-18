@@ -18,9 +18,10 @@ import { SingleStickerPreview } from '../components/SingleStickerPreview';
 import { PrintConfirmModal } from '../components/PrintConfirmModal';
 import { PrintSuccessScreen } from '../components/PrintSuccessScreen';
 import { WastageCounter } from '../components/WastageCounter';
+import { SheetPreviewFrame } from '../components/PreviewFrame';
 import { triggerBrowserPrint, setPrintPageSize } from '../lib/printExport';
 import { PREVIEW_SCALE } from '../lib/units';
-import { computePrintPositions, filterLabels, getEffectivePageConfig } from '../types';
+import { computePrintPositions, filterLabels, getEffectivePageConfig, productSummaryLine } from '../types';
 import { clearSheetState, saveSheetState } from '../lib/sheetState';
 import {
   DEMO_PRODUCTS,
@@ -28,9 +29,10 @@ import {
   DEMO_LAYOUT,
   buildDemoPreview,
   getDemoLabelData,
+  productDisplayLine,
 } from '../lib/demoData';
 import { buildWastageStats } from '../lib/wastageStats';
-import type { Label, Template, PrintJob, Layout, PageConfig } from '../types';
+import type { Label, Template, PrintJob, Layout, PageConfig, Category } from '../types';
 
 interface PopulatedJob extends Omit<PrintJob, 'templateId' | 'labelIds'> {
   templateId: Template | string;
@@ -111,7 +113,7 @@ export default function PrintLabelsPage() {
 
   const { data: labels, isLoading: loadingLabels } = useQuery({
     queryKey: ['labels'],
-    queryFn: api.labels.list,
+    queryFn: () => api.labels.list(),
     enabled: !isDemoMode,
   });
 
@@ -126,6 +128,23 @@ export default function PrintLabelsPage() {
     queryFn: () => api.layouts.list(templateId ?? undefined),
     enabled: !!templateId && !isDemoMode,
   });
+
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: api.categories.list,
+    enabled: !isDemoMode,
+  });
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, Category>();
+    (categories ?? []).forEach((c) => map.set(c._id, c));
+    return map;
+  }, [categories]);
+
+  const summarizeProduct = (label: Label) => {
+    if (isDemoMode) return productDisplayLine(label);
+    return productSummaryLine(label, categoryMap.get(label.categoryId));
+  };
 
   useQuery({
     queryKey: ['calibration'],
@@ -179,9 +198,17 @@ export default function PrintLabelsPage() {
         })
       : [];
 
+  const searchableKeys = useMemo(() => {
+    const keys = new Set<string>();
+    (categories ?? []).forEach((c) => {
+      c.config.fields.filter((f) => f.showInSearch).forEach((f) => keys.add(f.key));
+    });
+    return [...keys];
+  }, [categories]);
+
   const filteredLabels = useMemo(
-    () => filterLabels(productSearch, activeLabels),
-    [productSearch, activeLabels]
+    () => filterLabels(productSearch, activeLabels, searchableKeys.length ? searchableKeys : undefined),
+    [productSearch, activeLabels, searchableKeys]
   );
 
   const recentProducts = useMemo(
@@ -205,7 +232,7 @@ export default function PrintLabelsPage() {
     const id = selectedLabelIds[0];
     if (!id) return null;
     if (isDemoMode) return getDemoLabelData(id);
-    return labels?.find((l) => l._id === id)?.data ?? null;
+    return labels?.find((l) => l._id === id)?.values ?? null;
   }, [selectedLabelIds, isDemoMode, labels]);
 
   const saveHistoryMutation = useMutation({
@@ -467,9 +494,7 @@ export default function PrintLabelsPage() {
                     </span>
                     <div className="text-left">
                       <p className="text-2xl font-bold">{label.name}</p>
-                      <p className="text-xl text-slate-600">
-                        {label.data.designNumber} · {label.data.weight} · {label.data.price}
-                      </p>
+                      <p className="text-xl text-slate-600">{summarizeProduct(label)}</p>
                     </div>
                   </button>
                 );
@@ -535,7 +560,7 @@ export default function PrintLabelsPage() {
 
             <PositionLegend />
 
-            <div className="my-6 overflow-x-auto rounded-2xl bg-slate-50 p-6">
+            <div className="my-6 rounded-2xl bg-slate-50 p-6">
               <SmartPositionGrid
                 config={pageConfig}
                 usedPositions={usedPositions}
@@ -554,7 +579,7 @@ export default function PrintLabelsPage() {
             </div>
 
             {firstLabelData && printPositions.length > 0 && (
-              <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="mb-6 preview-grid">
                 <SingleStickerPreview
                   pageConfig={pageConfig}
                   layoutConfig={activeLayout.config}
@@ -562,8 +587,12 @@ export default function PrintLabelsPage() {
                   brandName={storeName}
                   logoUrl={shop?.logoUrl}
                 />
-                <div className="overflow-x-auto rounded-2xl bg-slate-100 p-4">
-                  <p className="mb-3 text-lg font-bold text-slate-700">Full Sheet Preview</p>
+                <SheetPreviewFrame
+                  pageWidthMm={pageConfig.pageWidth}
+                  pageHeightMm={pageConfig.pageHeight}
+                  scale={PREVIEW_SCALE * 0.85}
+                  label="Full Sheet Preview"
+                >
                   <SheetRenderer
                     pageConfig={pageConfig}
                     layoutConfig={activeLayout.config}
@@ -574,7 +603,7 @@ export default function PrintLabelsPage() {
                       const id = selectedLabelIds[i];
                       const data = isDemoMode
                         ? getDemoLabelData(id)
-                        : labels?.find((l) => l._id === id)?.data ?? null;
+                        : labels?.find((l) => l._id === id)?.values ?? null;
                       return { position: pos, label: data };
                     })}
                     brandName={storeName}
@@ -583,7 +612,7 @@ export default function PrintLabelsPage() {
                     showPositionNumbers
                     scale={PREVIEW_SCALE * 0.85}
                   />
-                </div>
+                </SheetPreviewFrame>
               </div>
             )}
 
@@ -622,7 +651,7 @@ export default function PrintLabelsPage() {
                 printPositions={previewData.printPositions}
                 positionLabelMap={previewData.positionLabelMap.map((p) => ({
                   position: p.position,
-                  label: p.label?.data ?? null,
+                  label: p.label?.values ?? null,
                 }))}
                 brandName={shop?.brandName}
                 logoUrl={shop?.logoUrl}
@@ -705,9 +734,7 @@ export default function PrintLabelsPage() {
                 className="product-card-default text-left"
               >
                 <p className="text-xl font-bold">{label.name}</p>
-                <p className="text-lg text-slate-600">
-                  {label.data.designNumber} · {label.data.price}
-                </p>
+                <p className="text-lg text-slate-600">{summarizeProduct(label)}</p>
               </button>
             ))}
           </div>

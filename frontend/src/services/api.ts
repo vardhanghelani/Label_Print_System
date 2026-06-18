@@ -7,9 +7,14 @@ import type {
   CalibrationSettings,
   PrintMode,
   ShopSettings,
+  Category,
+  ProductValues,
 } from '../types';
 
-const API_BASE = '/api';
+/** Remote API (production) or /api via Vite proxy (local dev) */
+const API_BASE =
+  import.meta.env.VITE_API_URL?.replace(/\/$/, '') ||
+  '/api';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
@@ -48,6 +53,16 @@ export const api = {
     delete: (id: string) => request<void>(`/templates/${id}`, { method: 'DELETE' }),
   },
 
+  categories: {
+    list: () => request<Category[]>('/categories'),
+    get: (id: string) => request<Category>(`/categories/${id}`),
+    create: (data: Partial<Category>) =>
+      request<Category>('/categories', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Category>) =>
+      request<Category>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/categories/${id}`, { method: 'DELETE' }),
+  },
+
   layouts: {
     list: (templateId?: string) =>
       request<Layout[]>(templateId ? `/layouts?templateId=${templateId}` : '/layouts'),
@@ -60,11 +75,12 @@ export const api = {
   },
 
   labels: {
-    list: () => request<Label[]>('/labels'),
+    list: (q?: string) =>
+      request<Label[]>(q ? `/labels?q=${encodeURIComponent(q)}` : '/labels'),
     get: (id: string) => request<Label>(`/labels/${id}`),
-    create: (data: Partial<Label>) =>
+    create: (data: { name: string; categoryId: string; values: ProductValues }) =>
       request<Label>('/labels', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Label>) =>
+    update: (id: string, data: Partial<{ name: string; categoryId: string; values: ProductValues }>) =>
       request<Label>(`/labels/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/labels/${id}`, { method: 'DELETE' }),
   },
