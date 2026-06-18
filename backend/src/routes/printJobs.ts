@@ -62,11 +62,11 @@ router.post(
       return;
     }
 
-    const labels = await labelRepository.findByIds(parsed.labelIds);
+    const labels = await labelRepository.findByIdsOrdered(parsed.labelIds);
     const pageConfig = getEffectivePageConfig(template.config as PageConfig);
     const printPositions = computePrintPositions(
       parsed.mode,
-      labels.length,
+      labels.filter(Boolean).length,
       pageConfig,
       {
         selectedPositions: parsed.selectedPositions,
@@ -93,7 +93,7 @@ router.post(
     const [template, layout, labels, calibration] = await Promise.all([
       templateRepository.findById(parsed.templateId),
       layoutRepository.findById(parsed.layoutId),
-      labelRepository.findByIds(parsed.labelIds),
+      labelRepository.findByIdsOrdered(parsed.labelIds),
       settingsRepository.getCalibration(),
     ]);
 
@@ -105,7 +105,7 @@ router.post(
     const pageConfig = getEffectivePageConfig(template.config as PageConfig);
     const printPositions = computePrintPositions(
       parsed.mode,
-      labels.length,
+      labels.filter(Boolean).length,
       pageConfig,
       {
         selectedPositions: parsed.selectedPositions,

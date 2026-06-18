@@ -366,10 +366,16 @@ export default function PrintLabelsPage() {
 
     persistSheetAfterPrint(templateId, printPositions);
 
-    const positionLabelMap = data.positionLabelMap.map((p) => ({
-      position: p.position,
-      label: p.label?.values ?? null,
-    }));
+    const positionLabelMap = data.printPositions.map((pos, i) => {
+      const labelId = selectedLabelIds[i];
+      const localLabel = labels?.find((l) => l._id === labelId);
+      const apiEntry = data.positionLabelMap.find((p) => p.position === pos);
+      return {
+        position: pos,
+        label: localLabel?.values ?? apiEntry?.label?.values ?? null,
+        categoryId: localLabel?.categoryId ?? apiEntry?.label?.categoryId,
+      };
+    });
 
     // #region agent log
     const prePrintPayload = {
@@ -409,6 +415,7 @@ export default function PrintLabelsPage() {
       calibration: exportCalibration,
       printPositions: data.printPositions,
       positionLabelMap,
+      categoriesById: categoryMap,
       brandName: shop?.brandName,
       filename: 'labels.pdf',
     });

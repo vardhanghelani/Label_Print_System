@@ -1,7 +1,7 @@
 import { Template } from '../models/Template.js';
 import { Layout } from '../models/Layout.js';
 import { Settings } from '../models/Settings.js';
-import { buildInterlockPageConfig } from '../types/index.js';
+import { buildInterlockPageConfig, type LayoutField } from '../types/index.js';
 
 export const JEWELLERY_SHEET_NAME = 'Jewellery Tag Sheet 14';
 export const JEWELLERY_LAYOUT_NAME = 'Default Jewellery Label';
@@ -110,6 +110,23 @@ export async function ensureJewellerySheet(): Promise<{ templateId: string; layo
       templateId: template._id,
       config: { fields: DEFAULT_LAYOUT_FIELDS },
     });
+  } else {
+    const existing = layout.config?.fields ?? [];
+    const merged = DEFAULT_LAYOUT_FIELDS.map((def) => {
+      const match = existing.find(
+        (f: { fieldKey?: string }) => f.fieldKey === def.fieldKey
+      );
+      return match ? { ...def, ...match, fieldKey: def.fieldKey, type: def.type } : def;
+    });
+    const extra = existing.filter(
+      (f: { fieldKey?: string }) =>
+        f.fieldKey && !DEFAULT_LAYOUT_FIELDS.some((d) => d.fieldKey === f.fieldKey)
+    );
+    layout.config = {
+      ...layout.config,
+      fields: [...merged, ...extra] as LayoutField[],
+    };
+    await layout.save();
   }
 
   await Settings.findOneAndUpdate(

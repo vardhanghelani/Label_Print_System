@@ -5,11 +5,12 @@ import type {
   LayoutField,
   LabelData,
   CalibrationSettings,
+  Category,
 } from '../types';
 import {
   getEffectivePageConfig,
   getFieldAbsoluteRect,
-  resolveFieldValue,
+  resolveProductFieldValue,
 } from '../types';
 import { resolveStickers } from './geometryBuilder';
 import { calibrateMm } from './units';
@@ -19,7 +20,12 @@ export interface VectorLabelPdfInput {
   layoutConfig: LayoutConfig;
   calibration: CalibrationSettings;
   printPositions: number[];
-  positionLabelMap: Array<{ position: number; label: LabelData | null }>;
+  positionLabelMap: Array<{
+    position: number;
+    label: LabelData | null;
+    categoryId?: string;
+  }>;
+  categoriesById?: Map<string, Category>;
   brandName?: string;
   filename?: string;
 }
@@ -97,10 +103,14 @@ function getCalibratedRect(
 function resolveDisplayValue(
   field: LayoutField,
   values: LabelData,
+  category: Category | undefined,
   brandName?: string
 ): string {
-  if (field.type === 'staticBranding' && brandName) return brandName;
-  return resolveFieldValue(field, values);
+  return resolveProductFieldValue(field, values, category, brandName);
+}
+
+function hasDisplayValue(value: string): boolean {
+  return value.trim().length > 0;
 }
 
 function isValidCoord(x: number, y: number, pageW: number, pageH: number): boolean {
@@ -132,7 +142,12 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
   pdf.setTextColor(0, 0, 0);
 
   const stickers = resolveStickers(pageConfig);
-  const labelMap = new Map(input.positionLabelMap.map((p) => [p.position, p.label]));
+  const labelMap = new Map(
+    input.positionLabelMap.map((p) => [
+      p.position,
+      { values: p.label, categoryId: p.categoryId },
+    ])
+  );
   const printSet = new Set(input.printPositions);
 
   // #region agent log
@@ -164,11 +179,17 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
   let drawCount = 0;
   let skipEmpty = 0;
   let skipInvalid = 0;
+  const skipEmptyByField: Record<string, number> = {};
 
   for (const sticker of stickers) {
     if (!printSet.has(sticker.stickerNumber)) continue;
 
-    const label = labelMap.get(sticker.stickerNumber);
+    const entry = labelMap.get(sticker.stickerNumber);
+    const label = entry?.values ?? null;
+    const category = entry?.categoryId
+      ? input.categoriesById?.get(entry.categoryId)
+      : undefined;
+
     if (!label) {
       // #region agent log
       debugLog(
@@ -182,9 +203,11 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
     }
 
     for (const field of input.layoutConfig.fields) {
-      const value = resolveDisplayValue(field, label, input.brandName);
-      if (!value) {
+      const value = resolveDisplayValue(field, label, category, input.brandName);
+      if (!hasDisplayValue(value)) {
         skipEmpty++;
+        const fk = field.fieldKey ?? field.label;
+        skipEmptyByField[fk] = (skipEmptyByField[fk] ?? 0) + 1;
         // #region agent log
         debugLog(
           'vectorLabelPdf.ts:empty-value',
@@ -194,6 +217,8 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
             fieldKey: field.fieldKey,
             fieldLabel: field.label,
             labelKeys: Object.keys(label),
+            labelValues: label,
+            categoryId: entry?.categoryId,
           },
           'H-A'
         );
@@ -271,7 +296,15 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
   debugLog(
     'vectorLabelPdf.ts:save',
     'PDF save',
-    { filename, drawCount, skipEmpty, skipInvalid, pageWidth, pageHeight },
+    {
+      filename,
+      drawCount,
+      skipEmpty,
+      skipInvalid,
+      skipEmptyByField,
+      pageWidth,
+      pageHeight,
+    },
     'H-D'
   );
   // #endregion

@@ -107,8 +107,8 @@ export {
   productSummaryLine,
   DATATYPE_LABELS,
 } from '../lib/category';
-import type { ProductValues } from '../lib/category';
-import { buildSearchHaystack } from '../lib/category';
+import type { Category, CategoryFieldDefinition, ProductValues } from '../lib/category';
+import { buildSearchHaystack, formatFieldValue, slugifyFieldKey } from '../lib/category';
 
 /** Print payload — dynamic field values */
 export type LabelData = ProductValues;
@@ -289,6 +289,44 @@ export function resolveFieldValue(field: LayoutField, values: ProductValues): st
     const v = values[field.fieldKey];
     return v === null || v === undefined ? '' : String(v);
   }
+  return '';
+}
+
+/** Resolve product value with category-aware formatting and flexible key matching */
+export function resolveProductFieldValue(
+  field: LayoutField,
+  values: ProductValues,
+  category?: Category,
+  brandName?: string
+): string {
+  if (field.type === 'staticBranding' && brandName) return brandName;
+  if (field.type === 'text' || field.type === 'staticBranding') return field.staticText ?? '';
+  if (field.type === 'logo') return field.logoUrl ?? '';
+  if (field.type !== 'categoryField') return '';
+
+  const categoryFields = category?.config.fields ?? [];
+  let catField: CategoryFieldDefinition | undefined;
+
+  if (field.fieldKey) {
+    catField = categoryFields.find((f) => f.key === field.fieldKey);
+    let raw = values[field.fieldKey];
+    if (raw === null || raw === undefined) {
+      const altKey = Object.keys(values).find(
+        (k) => k.toLowerCase() === field.fieldKey!.toLowerCase()
+      );
+      if (altKey) raw = values[altKey];
+    }
+    if ((raw === null || raw === undefined) && !catField) {
+      catField = categoryFields.find(
+        (f) => slugifyFieldKey(f.name) === field.fieldKey || f.name === field.label
+      );
+      if (catField) raw = values[catField.key];
+    }
+    if (raw === null || raw === undefined || raw === '') return '';
+    if (catField) return formatFieldValue(raw, catField.datatype);
+    return String(raw);
+  }
+
   return '';
 }
 

@@ -14,6 +14,14 @@ export class LabelRepository {
     return Label.find({ _id: { $in: ids } });
   }
 
+  /** Preserves the order of ids (MongoDB $in does not guarantee order). */
+  async findByIdsOrdered(ids: string[]): Promise<(ILabel | null)[]> {
+    if (!ids.length) return [];
+    const labels = await Label.find({ _id: { $in: ids } });
+    const byId = new Map(labels.map((l) => [String(l._id), l]));
+    return ids.map((id) => byId.get(id) ?? null);
+  }
+
   async create(data: Partial<ILabel>): Promise<ILabel> {
     return Label.create(data);
   }
