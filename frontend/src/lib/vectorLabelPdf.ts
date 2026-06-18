@@ -65,8 +65,33 @@ function fontStyle(field: LayoutField): string {
 }
 
 /** Layout fontSize uses designer units; convert to mm for jsPDF */
-function fieldFontSizeMm(field: LayoutField): number {
-  return Math.max(2, field.fontSize * 0.35);
+function fieldFontSizeMm(field: LayoutField, calibration: CalibrationSettings): number {
+  const raw = Number(field.fontSize);
+  const base = Number.isFinite(raw) && raw > 0 ? Math.max(2, raw * 0.35) : 2.5;
+  const scaleY = Number(calibration.scaleY);
+  return base * ((Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 100) / 100);
+}
+
+function sanitizePageMm(value: unknown, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+/** Calibrated field box — matches preview renderer coordinate math */
+function getCalibratedRect(
+  rect: { x: number; y: number; width: number; height: number },
+  calibration: CalibrationSettings
+) {
+  const x0 = calX(rect.x, calibration);
+  const y0 = calY(rect.y, calibration);
+  const x1 = calX(rect.x + rect.width, calibration);
+  const y1 = calY(rect.y + rect.height, calibration);
+  return {
+    x: x0,
+    y: y0,
+    width: x1 - x0,
+    height: y1 - y0,
+  };
 }
 
 function resolveDisplayValue(
@@ -95,7 +120,8 @@ function isValidCoord(x: number, y: number, pageW: number, pageH: number): boole
  */
 export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
   const pageConfig = getEffectivePageConfig(input.pageConfig);
-  const { pageWidth, pageHeight } = pageConfig;
+  const pageWidth = sanitizePageMm(pageConfig.pageWidth, 137);
+  const pageHeight = sanitizePageMm(pageConfig.pageHeight, 172);
 
   const pdf = new jsPDF({
     orientation: pageWidth > pageHeight ? 'landscape' : 'portrait',
@@ -176,17 +202,15 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
       }
 
       const rect = getFieldAbsoluteRect(field, sticker);
-      const x = calX(rect.x, input.calibration);
-      const y = calY(rect.y, input.calibration);
-      const fontSizeMm = fieldFontSizeMm(field);
+      const box = getCalibratedRect(rect, input.calibration);
 
-      if (!isValidCoord(x, y, pageWidth, pageHeight)) {
+      if (!isValidCoord(box.x, box.y, pageWidth, pageHeight)) {
         skipInvalid++;
         // #region agent log
         debugLog(
           'vectorLabelPdf.ts:invalid-coord',
           'Invalid coordinates — skipped',
-          { field: field.fieldKey, value, x, y, rect, pageWidth, pageHeight },
+          { field: field.fieldKey, value, box, rawRect: rect, pageWidth, pageHeight },
           'H-E'
         );
         // #endregion
@@ -194,13 +218,14 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
       }
 
       pdf.setFont('helvetica', fontStyle(field));
-      pdf.setFontSize(fontSizeMm);
+      const safeFontSize = fieldFontSizeMm(field, input.calibration);
+      pdf.setFontSize(safeFontSize);
 
-      let textX = x;
-      if (field.alignment === 'center') textX = x + rect.width / 2;
-      else if (field.alignment === 'right') textX = x + rect.width;
+      let textX = box.x;
+      if (field.alignment === 'center') textX = box.x + box.width / 2;
+      else if (field.alignment === 'right') textX = box.x + box.width;
 
-      const textY = y + fontSizeMm * 0.85;
+      const textY = box.y;
 
       // #region agent log
       debugLog(
@@ -212,7 +237,9 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
           value,
           x: textX,
           y: textY,
-          fontSizeMm,
+          box,
+          fontSizeMm: safeFontSize,
+          rawFontSize: field.fontSize,
           position: sticker.stickerNumber,
           section: field.section,
         },
@@ -220,13 +247,20 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
       );
       // #endregion
 
-      const textOpts: { align: 'left' | 'center' | 'right'; maxWidth: number; angle?: number } = {
+      const maxWidth = Number.isFinite(box.width) && box.width > 0 ? box.width : 30;
+      const textOpts: {
+        align: 'left' | 'center' | 'right';
+        maxWidth: number;
+        baseline: 'top';
+        angle?: number;
+      } = {
         align: field.alignment,
-        maxWidth: rect.width,
+        maxWidth,
+        baseline: 'top',
       };
       if (field.rotation) textOpts.angle = field.rotation;
 
-      pdf.text(value, textX, textY, textOpts);
+      pdf.text(String(value), textX, textY, textOpts);
       drawCount++;
     }
   }

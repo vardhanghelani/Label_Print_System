@@ -401,10 +401,12 @@ export default function PrintLabelsPage() {
     }).catch(() => {});
     // #endregion
 
+    const exportCalibration = { ...data.calibration, ...calibration };
+
     exportVectorLabelPdf({
       pageConfig: data.template.config,
       layoutConfig: data.layout.config,
-      calibration: data.calibration,
+      calibration: exportCalibration,
       printPositions: data.printPositions,
       positionLabelMap,
       brandName: shop?.brandName,
