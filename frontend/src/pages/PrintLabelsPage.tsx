@@ -1,6 +1,5 @@
 import { flushSync } from 'react-dom';
-import { PrintSheetPortal } from '../components/PrintSheetPortal';
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronRight,
@@ -21,8 +20,8 @@ import { PrintConfirmModal } from '../components/PrintConfirmModal';
 import { PrintSuccessScreen } from '../components/PrintSuccessScreen';
 import { WastageCounter } from '../components/WastageCounter';
 import { SheetPreviewFrame } from '../components/PreviewFrame';
-import { triggerBrowserPrint, setPrintPageSize } from '../lib/printExport';
-import { PREVIEW_SCALE, PRINT_SCALE } from '../lib/units';
+import { exportVectorLabelPdf } from '../lib/vectorLabelPdf';
+import { PREVIEW_SCALE } from '../lib/units';
 import { computePrintPositions, filterLabels, productSummaryLine } from '../types';
 import { clearSheetState, saveSheetState } from '../lib/sheetState';
 import {
@@ -66,7 +65,6 @@ function getRecentProductIds(history: PopulatedJob[], labels: Label[]): Label[] 
 
 export default function PrintLabelsPage() {
   const queryClient = useQueryClient();
-  const printRef = useRef<HTMLDivElement>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmError, setConfirmError] = useState('');
   const [markUsedMode, setMarkUsedMode] = useState(false);
@@ -355,8 +353,6 @@ export default function PrintLabelsPage() {
 
     flushSync(() => setPreviewData({ ...data, calibration }));
 
-    setPrintPageSize(data.template.config.pageWidth, data.template.config.pageHeight);
-
     await saveHistoryMutation.mutateAsync({
       templateId,
       layoutId,
@@ -370,8 +366,50 @@ export default function PrintLabelsPage() {
 
     persistSheetAfterPrint(templateId, printPositions);
 
-    // Wait for print dialog to close before unmounting print DOM
-    await triggerBrowserPrint(printRef.current);
+    const positionLabelMap = data.positionLabelMap.map((p) => ({
+      position: p.position,
+      label: p.label?.values ?? null,
+    }));
+
+    // #region agent log
+    const prePrintPayload = {
+      products: positionLabelMap.map((p) => ({ position: p.position, values: p.label })),
+      layout: data.layout.config.fields.map((f) => ({
+        id: f.id,
+        key: f.fieldKey,
+        section: f.section,
+      })),
+      stickers: data.printPositions,
+      pageSize: {
+        w: data.template.config.pageWidth,
+        h: data.template.config.pageHeight,
+      },
+    };
+    console.log('[print-debug] pre-export data', prePrintPayload);
+    fetch('http://127.0.0.1:7355/ingest/c86470b8-c57e-4f6c-891d-dfb865bf7897', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '602ec9' },
+      body: JSON.stringify({
+        sessionId: '602ec9',
+        location: 'PrintLabelsPage.tsx:handlePrintConfirm',
+        message: 'Pre-export product/layout data',
+        data: prePrintPayload,
+        hypothesisId: 'H-A',
+        timestamp: Date.now(),
+        runId: 'vector-pdf',
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    exportVectorLabelPdf({
+      pageConfig: data.template.config,
+      layoutConfig: data.layout.config,
+      calibration: data.calibration,
+      printPositions: data.printPositions,
+      positionLabelMap,
+      brandName: shop?.brandName,
+      filename: 'labels.pdf',
+    });
 
     setSuccessInfo({
       labelCount: printPositions.length,
@@ -381,30 +419,6 @@ export default function PrintLabelsPage() {
     });
     setScreen('success');
   };
-
-  /** Portal to body — window.print() only captures this sibling of #root */
-  const printSheet =
-    previewData && !isDemoMode ? (
-      <PrintSheetPortal innerRef={printRef}>
-        <SheetRenderer
-          pageConfig={previewData.template.config}
-          layoutConfig={previewData.layout.config}
-          calibration={previewData.calibration}
-          usedPositions={previewData.usedPositions}
-          printPositions={previewData.printPositions}
-          positionLabelMap={previewData.positionLabelMap.map((p) => ({
-            position: p.position,
-            label: p.label?.values ?? null,
-          }))}
-          brandName={shop?.brandName}
-          logoUrl={shop?.logoUrl}
-          showGrid={false}
-          showPositionNumbers={false}
-          scale={PRINT_SCALE}
-          unit="px"
-        />
-      </PrintSheetPortal>
-    ) : null;
 
   if (!isDemoMode && (loadingShop || loadingLabels)) return <LoadingSpinner />;
 
@@ -488,7 +502,6 @@ export default function PrintLabelsPage() {
           </div>
         )}
       </div>
-      {printSheet}
       </>
     );
   }
@@ -722,7 +735,6 @@ export default function PrintLabelsPage() {
           }}
         />
       </div>
-      {printSheet}
       </>
     );
   }
