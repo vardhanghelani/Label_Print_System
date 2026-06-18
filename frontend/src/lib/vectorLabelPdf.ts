@@ -16,7 +16,7 @@ import {
 } from '../types';
 import { resolveLayoutFieldsForCategory } from '../lib/categoryPrintLayout';
 import { resolveStickers } from './geometryBuilder';
-import { calibrateMm } from './units';
+import { calibrateMm, LABEL_FONT_MM_SCALE } from './units';
 
 export interface VectorLabelPdfInput {
   pageConfig: PageConfig;
@@ -78,7 +78,7 @@ function fontStyle(field: LayoutField): string {
 /** Layout fontSize uses designer units; convert to mm for jsPDF */
 function fieldFontSizeMm(field: LayoutField, calibration: CalibrationSettings): number {
   const raw = Number(field.fontSize);
-  const base = Number.isFinite(raw) && raw > 0 ? Math.max(2, raw * 0.35) : 2.5;
+  const base = Number.isFinite(raw) && raw > 0 ? Math.max(2, raw * LABEL_FONT_MM_SCALE) : 2.5;
   const scaleY = Number(calibration.scaleY);
   return base * ((Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 100) / 100);
 }

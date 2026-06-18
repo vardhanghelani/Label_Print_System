@@ -13,6 +13,7 @@ import {
   calibrateMm,
   formatLength,
   PREVIEW_SCALE,
+  LABEL_FONT_MM_SCALE,
   type RenderUnit,
 } from '../../lib/units';
 import type { SheetRenderOptions } from './SheetRenderer';
@@ -58,7 +59,9 @@ function renderField(
   if (!value && field.type !== 'staticBranding' && field.type !== 'text') return null;
 
   const fontSize =
-    unit === 'mm' ? `${field.fontSize * 0.35}mm` : `${field.fontSize * scale * 0.35}px`;
+    unit === 'mm'
+      ? `${field.fontSize * LABEL_FONT_MM_SCALE}mm`
+      : `${field.fontSize * scale * LABEL_FONT_MM_SCALE}px`;
 
   return (
     <div

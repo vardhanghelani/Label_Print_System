@@ -5,8 +5,8 @@ import { isJewelleryTemplate, type PageConfig } from '../types';
 const JEWELLERY_BROAD_HEIGHT_MM = 9;
 const JEWELLERY_BROAD_WIDTH_MM = 62;
 /** Vertical pitch per text line inside 9mm-tall broad area */
-const JEWELLERY_LINE_PITCH_MM = 2.65;
-const JEWELLERY_MAX_LINES = Math.floor(JEWELLERY_BROAD_HEIGHT_MM / JEWELLERY_LINE_PITCH_MM);
+const JEWELLERY_LINE_PITCH_MM = 2.85;
+const JEWELLERY_MAX_LINES = Math.min(3, Math.floor(JEWELLERY_BROAD_HEIGHT_MM / JEWELLERY_LINE_PITCH_MM));
 
 /**
  * Auto-place category showInLabel fields inside the 62×9mm broad sticker area.
@@ -36,7 +36,7 @@ export function buildAutoLayoutFields(category: Category, pageConfig?: PageConfi
       y = 0.2 + i * JEWELLERY_LINE_PITCH_MM;
       width = JEWELLERY_BROAD_WIDTH_MM - 1;
       height = JEWELLERY_LINE_PITCH_MM;
-      fontSize = i === 0 ? 6 : 5.5;
+      fontSize = i === 0 ? 8 : 7;
       alignment = 'left';
     }
 

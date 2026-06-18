@@ -4,8 +4,8 @@ export const MM_TO_PX = 96 / 25.4;
 /** Preview display scale — keeps large sheets visible on screen */
 export const PREVIEW_SCALE = 2;
 
-/** Print uses true mm via CSS — scale 1 means 1mm in CSS */
-export const PRINT_SCALE = 1;
+/** Print/preview: layout fontSize units → mm on sticker */
+export const LABEL_FONT_MM_SCALE = 0.4;
 
 export function mmToPx(mm: number, scale = PREVIEW_SCALE): number {
   return mm * MM_TO_PX * scale;

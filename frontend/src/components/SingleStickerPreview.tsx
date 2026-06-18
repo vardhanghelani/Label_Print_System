@@ -9,7 +9,7 @@ import {
   getEffectivePageConfig,
 } from '../types';
 import { resolveStickers } from '../lib/geometryBuilder';
-import { mmToPx } from '../lib/units';
+import { mmToPx, LABEL_FONT_MM_SCALE } from '../lib/units';
 import { PreviewFrame } from './PreviewFrame';
 
 interface SingleStickerPreviewProps {
@@ -71,7 +71,7 @@ function renderFieldAt(
         top,
         width: mmToPx(field.width, PREVIEW_SCALE),
         height: mmToPx(field.height, PREVIEW_SCALE),
-        fontSize: field.fontSize * PREVIEW_SCALE * 0.35,
+        fontSize: field.fontSize * PREVIEW_SCALE * LABEL_FONT_MM_SCALE,
         fontWeight: field.bold ? 'bold' : 'normal',
         fontStyle: field.italic ? 'italic' : 'normal',
         textAlign: field.alignment,
