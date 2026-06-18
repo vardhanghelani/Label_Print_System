@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -107,7 +108,7 @@ export default function PrintLabelsPage() {
     queryFn: api.settings.getShop,
   });
 
-  const { data: templates } = useQuery({
+  const { data: templates, isLoading: loadingTemplates } = useQuery({
     queryKey: ['templates'],
     queryFn: api.templates.list,
     enabled: !isDemoMode,
@@ -125,7 +126,7 @@ export default function PrintLabelsPage() {
     enabled: !isDemoMode,
   });
 
-  const { data: layouts } = useQuery({
+  const { data: layouts, isLoading: loadingLayouts } = useQuery({
     queryKey: ['layouts', templateId],
     queryFn: () => api.layouts.list(templateId ?? undefined),
     enabled: !!templateId && !isDemoMode,
@@ -171,26 +172,50 @@ export default function PrintLabelsPage() {
   }, [usedPositions, templateId, sheetIntent]);
 
   useEffect(() => {
-    if (isDemoMode) return;
-    if (shop?.defaultTemplateId && !templateId) {
-      setTemplateId(shop.defaultTemplateId);
+    if (isDemoMode || !templates?.length) return;
+
+    const defaultValid =
+      shop?.defaultTemplateId && templates.some((t) => t._id === shop.defaultTemplateId);
+    const resolvedId = defaultValid
+      ? shop!.defaultTemplateId!
+      : templates[0]._id;
+
+    if (!templateId || !templates.some((t) => t._id === templateId)) {
+      setTemplateId(resolvedId);
     }
-  }, [shop, templateId, setTemplateId, isDemoMode]);
+  }, [isDemoMode, shop, templates, templateId, setTemplateId]);
 
   useEffect(() => {
-    if (isDemoMode) return;
-    if (shop?.defaultLayoutId && templateId && !layoutId) {
-      setLayoutId(shop.defaultLayoutId);
-    } else if (layouts?.length && templateId && !layoutId) {
-      setLayoutId(layouts[0]._id);
+    if (isDemoMode || !templateId || !layouts?.length) return;
+
+    const defaultValid =
+      shop?.defaultLayoutId && layouts.some((l) => l._id === shop.defaultLayoutId);
+    const resolvedId = defaultValid ? shop!.defaultLayoutId! : layouts[0]._id;
+
+    if (!layoutId || !layouts.some((l) => l._id === layoutId)) {
+      setLayoutId(resolvedId);
     }
-  }, [shop, layouts, templateId, layoutId, setLayoutId, isDemoMode]);
+  }, [isDemoMode, shop, layouts, templateId, layoutId, setLayoutId]);
 
-  const activeTemplate: Template | undefined = isDemoMode
-    ? DEMO_TEMPLATE
-    : templates?.find((t: Template) => t._id === templateId);
+  const activeTemplate: Template | undefined = useMemo(() => {
+    if (isDemoMode) return DEMO_TEMPLATE;
+    if (!templates?.length) return undefined;
+    if (templateId) {
+      const found = templates.find((t) => t._id === templateId);
+      if (found) return found;
+    }
+    return templates[0];
+  }, [isDemoMode, templates, templateId]);
 
-  const activeLayout = isDemoMode ? DEMO_LAYOUT : layouts?.find((l) => l._id === layoutId);
+  const activeLayout: Layout | undefined = useMemo(() => {
+    if (isDemoMode) return DEMO_LAYOUT;
+    if (!layouts?.length) return undefined;
+    if (layoutId) {
+      const found = layouts.find((l) => l._id === layoutId);
+      if (found) return found;
+    }
+    return layouts[0];
+  }, [isDemoMode, layouts, layoutId]);
 
   const activeLabels = useMemo(
     () => (isDemoMode ? DEMO_PRODUCTS : (labels ?? EMPTY_LABELS)),
@@ -249,6 +274,14 @@ export default function PrintLabelsPage() {
     if (isDemoMode) return getDemoLabelData(id);
     return labels?.find((l) => l._id === id)?.values ?? null;
   }, [selectedLabelIds, isDemoMode, labels]);
+
+  const step2Loading =
+    quickStep === 2 &&
+    !isDemoMode &&
+    (loadingTemplates || loadingShop || (!!templateId && loadingLayouts));
+
+  const step2MissingSetup =
+    quickStep === 2 && !isDemoMode && !loadingTemplates && !loadingShop && !pageConfig;
 
   const saveHistoryMutation = useMutation({
     mutationFn: api.printJobs.create,
@@ -311,6 +344,11 @@ export default function PrintLabelsPage() {
 
   const handleProceedToPrint = async () => {
     setConfirmError('');
+    if (!activeLayout) {
+      setConfirmError('No label design found. Create one under Label Design or set a default in Shop Setup.');
+      setShowConfirm(true);
+      return;
+    }
     if (printPositions.length === 0) {
       setConfirmError('No empty stickers available. Try "New Sheet" or select fewer products.');
       setShowConfirm(true);
@@ -530,8 +568,44 @@ export default function PrintLabelsPage() {
           </div>
         )}
 
-        {quickStep === 2 && pageConfig && activeLayout && (
+        {quickStep === 2 && step2Loading && (
+          <div className="card flex flex-col items-center py-16">
+            <LoadingSpinner />
+            <p className="mt-4 text-xl text-slate-600">Loading sticker sheet…</p>
+          </div>
+        )}
+
+        {quickStep === 2 && step2MissingSetup && (
           <div className="card">
+            <h2 className="mb-2 text-3xl font-bold">Setup Required</h2>
+            <p className="mb-6 text-xl text-slate-600">
+              No sticker format is configured yet. Create a sticker sheet format first, then try again.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link to="/admin/formats" className="btn-primary">
+                Sticker Formats
+              </Link>
+              <Link to="/admin/shop" className="btn-secondary">
+                Shop Setup
+              </Link>
+              <button type="button" className="btn-secondary" onClick={() => setQuickStep(1)}>
+                Back to Products
+              </button>
+            </div>
+          </div>
+        )}
+
+        {quickStep === 2 && pageConfig && !step2Loading && (
+          <div className="card">
+            {!activeLayout && (
+              <p className="mb-4 rounded-2xl bg-amber-50 px-5 py-4 text-lg font-semibold text-amber-900">
+                No label design yet — you can still pick sticker positions.{' '}
+                <Link to="/admin/designs" className="underline">
+                  Create a label design
+                </Link>{' '}
+                to enable print preview.
+              </p>
+            )}
             <h2 className="mb-2 text-3xl font-bold">Step 2 — Choose Sticker Position</h2>
             <p className="mb-6 text-xl text-slate-600">
               Tap the first empty sticker where you want to start.
@@ -593,7 +667,7 @@ export default function PrintLabelsPage() {
               />
             </div>
 
-            {firstLabelData && printPositions.length > 0 && (
+            {firstLabelData && printPositions.length > 0 && activeLayout && (
               <div className="mb-6 preview-grid">
                 <SingleStickerPreview
                   pageConfig={pageConfig}
@@ -646,7 +720,7 @@ export default function PrintLabelsPage() {
                 type="button"
                 className="btn-xl"
                 onClick={handleProceedToPrint}
-                disabled={printPositions.length === 0}
+                disabled={printPositions.length === 0 || !activeLayout}
               >
                 Print
                 <ChevronRight className="h-6 w-6" />
