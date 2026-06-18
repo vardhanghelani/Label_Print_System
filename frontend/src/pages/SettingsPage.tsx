@@ -176,7 +176,7 @@ export default function SettingsPage() {
       </div>
 
       {pageConfig && (
-        <div className="pointer-events-none fixed left-[-9999px] top-0">
+        <div className="print-sheet-host">
           <div ref={printRef} className="print-area">
             <CalibrationSheetRenderer
               pageConfig={pageConfig}

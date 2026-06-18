@@ -19,10 +19,25 @@ function injectPageSizeStyle(pageSize: string): void {
   styleEl.textContent = `@media print { @page { size: ${pageSize}; margin: 0; } }`;
 }
 
-export function triggerBrowserPrint(pageSize?: string): void {
-  if (pageSize) injectPageSizeStyle(pageSize);
-  else injectPageSizeStyle(activePageSize);
-  window.print();
+export function triggerBrowserPrint(pageSize?: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (pageSize) injectPageSizeStyle(pageSize);
+    else injectPageSizeStyle(activePageSize);
+
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('afterprint', finish);
+      clearTimeout(fallback);
+      resolve();
+    };
+
+    // Must wait until the print dialog closes — otherwise React unmounts .print-area → blank PDF
+    window.addEventListener('afterprint', finish);
+    const fallback = setTimeout(finish, 60_000);
+    window.print();
+  });
 }
 
 /** PDF output uses exact millimeter page dimensions */

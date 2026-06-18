@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -351,6 +352,10 @@ export default function PrintLabelsPage() {
     const data = previewData ?? (await loadPreview());
     if (!data) return;
 
+    if (!previewData) {
+      flushSync(() => setPreviewData(data));
+    }
+
     setPrintPageSize(data.template.config.pageWidth, data.template.config.pageHeight);
 
     await saveHistoryMutation.mutateAsync({
@@ -365,7 +370,9 @@ export default function PrintLabelsPage() {
     });
 
     persistSheetAfterPrint(templateId, printPositions);
-    triggerBrowserPrint();
+
+    // Wait for print dialog to close before unmounting print DOM
+    await triggerBrowserPrint();
 
     setSuccessInfo({
       labelCount: printPositions.length,
@@ -375,6 +382,31 @@ export default function PrintLabelsPage() {
     });
     setScreen('success');
   };
+
+  /** Same SheetRenderer as preview — this DOM node is what window.print() captures */
+  const printSheet =
+    previewData && !isDemoMode ? (
+      <div className="print-sheet-host">
+        <div ref={printRef} className="print-area">
+          <SheetRenderer
+            pageConfig={previewData.template.config}
+            layoutConfig={previewData.layout.config}
+            calibration={previewData.calibration}
+            usedPositions={previewData.usedPositions}
+            printPositions={previewData.printPositions}
+            positionLabelMap={previewData.positionLabelMap.map((p) => ({
+              position: p.position,
+              label: p.label?.values ?? null,
+            }))}
+            brandName={shop?.brandName}
+            logoUrl={shop?.logoUrl}
+            showGrid={false}
+            showPositionNumbers={false}
+            unit="mm"
+          />
+        </div>
+      </div>
+    ) : null;
 
   if (!isDemoMode && (loadingShop || loadingLabels)) return <LoadingSpinner />;
 
@@ -398,6 +430,7 @@ export default function PrintLabelsPage() {
 
   if (screen === 'previousPrints') {
     return (
+      <>
       <div className="mx-auto max-w-3xl">
         <button type="button" className="btn-secondary mb-6" onClick={goHome}>
           <ChevronLeft className="h-5 w-5" />
@@ -457,6 +490,8 @@ export default function PrintLabelsPage() {
           </div>
         )}
       </div>
+      {printSheet}
+      </>
     );
   }
 
@@ -465,6 +500,7 @@ export default function PrintLabelsPage() {
     const sheetFormat = JEWELLERY_SHEET_NAME;
 
     return (
+      <>
       <div className="mx-auto max-w-4xl">
         <button type="button" className="btn-secondary mb-6" onClick={goHome}>
           <ChevronLeft className="h-5 w-5" />
@@ -659,29 +695,6 @@ export default function PrintLabelsPage() {
           </div>
         )}
 
-        {previewData && !isDemoMode && (
-          <div className="pointer-events-none fixed left-[-9999px] top-0">
-            <div ref={printRef} className="print-area">
-              <SheetRenderer
-                pageConfig={previewData.template.config}
-                layoutConfig={previewData.layout.config}
-                calibration={previewData.calibration}
-                usedPositions={previewData.usedPositions}
-                printPositions={previewData.printPositions}
-                positionLabelMap={previewData.positionLabelMap.map((p) => ({
-                  position: p.position,
-                  label: p.label?.values ?? null,
-                }))}
-                brandName={shop?.brandName}
-                logoUrl={shop?.logoUrl}
-                showGrid
-                showPositionNumbers
-                unit="mm"
-              />
-            </div>
-          </div>
-        )}
-
         <PrintConfirmModal
           open={showConfirm}
           storeName={storeName}
@@ -711,6 +724,8 @@ export default function PrintLabelsPage() {
           }}
         />
       </div>
+      {printSheet}
+      </>
     );
   }
 
