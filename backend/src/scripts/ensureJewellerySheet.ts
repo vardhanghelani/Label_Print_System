@@ -1,7 +1,7 @@
 import { Template } from '../models/Template.js';
 import { Layout } from '../models/Layout.js';
 import { Settings } from '../models/Settings.js';
-import { buildInterlockPageConfig, type LayoutField } from '../types/index.js';
+import { buildInterlockPageConfig } from '../types/index.js';
 
 export const JEWELLERY_SHEET_NAME = 'Jewellery Tag Sheet 14';
 export const JEWELLERY_LAYOUT_NAME = 'Default Jewellery Label';
@@ -22,69 +22,6 @@ export function buildJewellerySheetConfig() {
     verticalPitch: 9,
   });
 }
-
-const DEFAULT_LAYOUT_FIELDS = [
-  {
-    id: 'f1',
-    type: 'categoryField',
-    fieldKey: 'design_number',
-    label: 'Design Number',
-    section: 'A' as const,
-    x: 0.5,
-    y: 0.3,
-    width: 30,
-    height: 4,
-    fontSize: 7,
-    bold: true,
-    italic: false,
-    alignment: 'left' as const,
-  },
-  {
-    id: 'f2',
-    type: 'categoryField',
-    fieldKey: 'weight',
-    label: 'Weight',
-    section: 'A' as const,
-    x: 0.5,
-    y: 5,
-    width: 30,
-    height: 3.5,
-    fontSize: 6,
-    bold: false,
-    italic: false,
-    alignment: 'left' as const,
-  },
-  {
-    id: 'f3',
-    type: 'categoryField',
-    fieldKey: 'price',
-    label: 'Price',
-    section: 'B' as const,
-    x: 0.5,
-    y: 0.3,
-    width: 29.5,
-    height: 4,
-    fontSize: 7,
-    bold: true,
-    italic: false,
-    alignment: 'center' as const,
-  },
-  {
-    id: 'f4',
-    type: 'categoryField',
-    fieldKey: 'purity',
-    label: 'Purity',
-    section: 'B' as const,
-    x: 0.5,
-    y: 5,
-    width: 29.5,
-    height: 3.5,
-    fontSize: 6,
-    bold: false,
-    italic: false,
-    alignment: 'right' as const,
-  },
-];
 
 /** Ensures the single predefined jewellery sheet exists and is set as shop default */
 export async function ensureJewellerySheet(): Promise<{ templateId: string; layoutId: string }> {
@@ -108,25 +45,8 @@ export async function ensureJewellerySheet(): Promise<{ templateId: string; layo
     layout = await Layout.create({
       name: JEWELLERY_LAYOUT_NAME,
       templateId: template._id,
-      config: { fields: DEFAULT_LAYOUT_FIELDS },
+      config: { fields: [] },
     });
-  } else {
-    const existing = layout.config?.fields ?? [];
-    const merged = DEFAULT_LAYOUT_FIELDS.map((def) => {
-      const match = existing.find(
-        (f: { fieldKey?: string }) => f.fieldKey === def.fieldKey
-      );
-      return match ? { ...def, ...match, fieldKey: def.fieldKey, type: def.type } : def;
-    });
-    const extra = existing.filter(
-      (f: { fieldKey?: string }) =>
-        f.fieldKey && !DEFAULT_LAYOUT_FIELDS.some((d) => d.fieldKey === f.fieldKey)
-    );
-    layout.config = {
-      ...layout.config,
-      fields: [...merged, ...extra] as LayoutField[],
-    };
-    await layout.save();
   }
 
   await Settings.findOneAndUpdate(

@@ -2,8 +2,11 @@ import type { LayoutField, LabelData } from '../../types';
 import {
   getFieldAbsoluteRect,
   resolveFieldValue,
+  resolveProductFieldValue,
+  formatPrintFieldLine,
   isJewelleryTemplate,
 } from '../../types';
+import type { Category } from '../../types';
 import { resolveStickers } from '../../lib/geometryBuilder';
 import {
   mmToPx,
@@ -24,11 +27,15 @@ function renderField(
   calY: (mm: number) => string,
   len: (mm: number) => string,
   brandName?: string,
-  logoUrl?: string
+  logoUrl?: string,
+  category?: Category
 ) {
   const rect = getFieldAbsoluteRect(field, sticker);
-  let value = resolveFieldValue(field, label);
+  let value = category
+    ? resolveProductFieldValue(field, label, category, brandName)
+    : resolveFieldValue(field, label);
   if (field.type === 'staticBranding' && brandName) value = brandName;
+  value = formatPrintFieldLine(field, value, category);
 
   if (field.type === 'logo' && (value || logoUrl)) {
     return (
@@ -85,6 +92,8 @@ export function JewellerySheetRenderer({
   positionLabelMap,
   brandName,
   logoUrl,
+  resolveFieldsForPosition,
+  categoriesById,
   showGrid = true,
   showPositionNumbers = true,
   showPrintableArea = false,
@@ -99,6 +108,9 @@ export function JewellerySheetRenderer({
   const printSet = new Set(printPositions);
   const usedSet = new Set(usedPositions);
   const labelMap = new Map(positionLabelMap.map((p) => [p.position, p.label]));
+  const categoryMap = new Map(
+    positionLabelMap.filter((p) => p.categoryId).map((p) => [p.position, p.categoryId!])
+  );
 
   const calX = (mm: number) =>
     formatLength(calibrateMm(mm, calibration.horizontalOffset, calibration.scaleX), unit, scale);
@@ -169,8 +181,25 @@ export function JewellerySheetRenderer({
           </span>
         )}
         {label &&
-          layoutConfig.fields.map((field) =>
-            renderField(field, label, sticker, unit, scale, calX, calY, len, brandName, logoUrl)
+          (resolveFieldsForPosition
+            ? resolveFieldsForPosition(position, categoryMap.get(position))
+            : layoutConfig.fields
+          ).map((field) =>
+            renderField(
+              field,
+              label,
+              sticker,
+              unit,
+              scale,
+              calX,
+              calY,
+              len,
+              brandName,
+              logoUrl,
+              categoryMap.get(position)
+                ? categoriesById?.get(categoryMap.get(position)!)
+                : undefined
+            )
           )}
       </div>
     );

@@ -6,12 +6,15 @@ import type {
   LabelData,
   CalibrationSettings,
   Category,
+  Layout,
 } from '../types';
 import {
   getEffectivePageConfig,
   getFieldAbsoluteRect,
   resolveProductFieldValue,
+  formatPrintFieldLine,
 } from '../types';
+import { resolveLayoutFieldsForCategory } from '../lib/categoryPrintLayout';
 import { resolveStickers } from './geometryBuilder';
 import { calibrateMm } from './units';
 
@@ -26,6 +29,8 @@ export interface VectorLabelPdfInput {
     categoryId?: string;
   }>;
   categoriesById?: Map<string, Category>;
+  layouts?: Layout[];
+  templateId?: string;
   brandName?: string;
   filename?: string;
 }
@@ -106,7 +111,8 @@ function resolveDisplayValue(
   category: Category | undefined,
   brandName?: string
 ): string {
-  return resolveProductFieldValue(field, values, category, brandName);
+  const raw = resolveProductFieldValue(field, values, category, brandName);
+  return formatPrintFieldLine(field, raw, category);
 }
 
 function hasDisplayValue(value: string): boolean {
@@ -163,6 +169,7 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
       pageHeight,
       printPositions: input.printPositions,
       fieldCount: input.layoutConfig.fields.length,
+      categoryFieldMode: true,
       fields: input.layoutConfig.fields.map((f) => ({
         id: f.id,
         key: f.fieldKey,
@@ -202,7 +209,12 @@ export function exportVectorLabelPdf(input: VectorLabelPdfInput): void {
       continue;
     }
 
-    for (const field of input.layoutConfig.fields) {
+    for (const field of resolveLayoutFieldsForCategory(
+      category,
+      input.layouts,
+      input.templateId,
+      pageConfig
+    )) {
       const value = resolveDisplayValue(field, label, category, input.brandName);
       if (!hasDisplayValue(value)) {
         skipEmpty++;

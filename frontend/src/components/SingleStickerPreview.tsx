@@ -1,6 +1,8 @@
-import type { PageConfig, LayoutConfig, LabelData, CalibrationSettings, LayoutField } from '../types';
+import type { PageConfig, LayoutConfig, LabelData, CalibrationSettings, LayoutField, Category } from '../types';
 import {
   resolveFieldValue,
+  resolveProductFieldValue,
+  formatPrintFieldLine,
   isJewelleryTemplate,
   getStickerDefinition,
   getFieldAbsoluteRect,
@@ -16,6 +18,7 @@ interface SingleStickerPreviewProps {
   labelData: LabelData;
   brandName?: string;
   logoUrl?: string;
+  category?: Category;
   calibration?: CalibrationSettings;
   title?: string;
 }
@@ -28,10 +31,14 @@ function renderFieldAt(
   originX: number,
   originY: number,
   brandName?: string,
-  logoUrl?: string
+  logoUrl?: string,
+  category?: Category
 ) {
-  let value = resolveFieldValue(field, labelData);
+  let value = category
+    ? resolveProductFieldValue(field, labelData, category, brandName)
+    : resolveFieldValue(field, labelData);
   if (field.type === 'staticBranding' && brandName) value = brandName;
+  value = formatPrintFieldLine(field, value, category);
 
   const left = mmToPx(originX + field.x, PREVIEW_SCALE);
   const top = mmToPx(originY + field.y, PREVIEW_SCALE);
@@ -81,6 +88,7 @@ export function SingleStickerPreview({
   labelData,
   brandName,
   logoUrl,
+  category,
   title = 'Your Label Will Look Like This',
 }: SingleStickerPreviewProps) {
   const effectiveConfig = getEffectivePageConfig(pageConfig);
@@ -138,7 +146,8 @@ export function SingleStickerPreview({
                 rect.x - sampleSticker.x,
                 rect.y - sampleSticker.y,
                 brandName,
-                logoUrl
+                logoUrl,
+                category
               );
             })}
           </div>
@@ -162,7 +171,7 @@ export function SingleStickerPreview({
           style={{ width: w, height: h }}
         >
           {layoutConfig.fields.map((field) =>
-            renderFieldAt(field, labelData, 0, 0, brandName, logoUrl)
+            renderFieldAt(field, labelData, 0, 0, brandName, logoUrl, category)
           )}
         </div>
       </PreviewFrame>

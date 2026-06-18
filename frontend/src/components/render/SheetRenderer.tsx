@@ -3,6 +3,8 @@ import type {
   LayoutConfig,
   LabelData,
   CalibrationSettings,
+  LayoutField,
+  Category,
 } from '../../types';
 import {
   getPositionCoordinates,
@@ -20,9 +22,12 @@ export interface SheetRenderOptions {
   calibration: CalibrationSettings;
   usedPositions: number[];
   printPositions: number[];
-  positionLabelMap: Array<{ position: number; label: LabelData | null }>;
+  positionLabelMap: Array<{ position: number; label: LabelData | null; categoryId?: string }>;
   brandName?: string;
   logoUrl?: string;
+  /** Per-sticker fields from product category (overrides layoutConfig.fields when set) */
+  resolveFieldsForPosition?: (position: number, categoryId?: string) => LayoutField[];
+  categoriesById?: Map<string, Category>;
   showGrid?: boolean;
   showPositionNumbers?: boolean;
   showPrintableArea?: boolean;
@@ -41,6 +46,8 @@ export function SheetRenderer({
   positionLabelMap,
   brandName,
   logoUrl,
+  resolveFieldsForPosition,
+  categoriesById,
   showGrid = true,
   showPositionNumbers = true,
   showPrintableArea = false,
@@ -62,6 +69,8 @@ export function SheetRenderer({
         positionLabelMap={positionLabelMap}
         brandName={brandName}
         logoUrl={logoUrl}
+        resolveFieldsForPosition={resolveFieldsForPosition}
+        categoriesById={categoriesById}
         showGrid={showGrid}
         showPositionNumbers={showPositionNumbers}
         showPrintableArea={showPrintableArea}

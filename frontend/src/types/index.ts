@@ -330,6 +330,24 @@ export function resolveProductFieldValue(
   return '';
 }
 
+/** Print line: "Field Name: value" for category fields */
+export function formatPrintFieldLine(
+  field: LayoutField,
+  value: string,
+  category?: Category
+): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (field.type !== 'categoryField') return trimmed;
+
+  let name = field.label?.trim() || 'Field';
+  if (field.fieldKey && category) {
+    const catField = category.config.fields.find((f) => f.key === field.fieldKey);
+    if (catField?.name) name = catField.name;
+  }
+  return `${name}: ${trimmed}`;
+}
+
 export function computePrintPositions(
   mode: PrintMode,
   labelCount: number,
