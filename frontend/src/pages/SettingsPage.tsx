@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { PrintSheetPortal } from '../components/PrintSheetPortal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Save, Printer } from 'lucide-react';
 import { api } from '../services/api';
@@ -55,8 +56,8 @@ export default function SettingsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handlePrintCalibration = () => {
-    triggerBrowserPrint(printPageSize);
+  const handlePrintCalibration = async () => {
+    await triggerBrowserPrint(printRef.current, printPageSize);
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -176,15 +177,14 @@ export default function SettingsPage() {
       </div>
 
       {pageConfig && (
-        <div className="print-sheet-host">
-          <div ref={printRef} className="print-area">
-            <CalibrationSheetRenderer
-              pageConfig={pageConfig}
-              calibration={form}
-              unit="mm"
-            />
-          </div>
-        </div>
+        <PrintSheetPortal innerRef={printRef}>
+          <CalibrationSheetRenderer
+            pageConfig={pageConfig}
+            calibration={form}
+            unit="px"
+            scale={1}
+          />
+        </PrintSheetPortal>
       )}
 
       <ConfirmDialog

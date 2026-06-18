@@ -1,4 +1,5 @@
 import { flushSync } from 'react-dom';
+import { PrintSheetPortal } from '../components/PrintSheetPortal';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -21,7 +22,7 @@ import { PrintSuccessScreen } from '../components/PrintSuccessScreen';
 import { WastageCounter } from '../components/WastageCounter';
 import { SheetPreviewFrame } from '../components/PreviewFrame';
 import { triggerBrowserPrint, setPrintPageSize } from '../lib/printExport';
-import { PREVIEW_SCALE } from '../lib/units';
+import { PREVIEW_SCALE, PRINT_SCALE } from '../lib/units';
 import { computePrintPositions, filterLabels, productSummaryLine } from '../types';
 import { clearSheetState, saveSheetState } from '../lib/sheetState';
 import {
@@ -352,9 +353,7 @@ export default function PrintLabelsPage() {
     const data = previewData ?? (await loadPreview());
     if (!data) return;
 
-    if (!previewData) {
-      flushSync(() => setPreviewData(data));
-    }
+    flushSync(() => setPreviewData({ ...data, calibration }));
 
     setPrintPageSize(data.template.config.pageWidth, data.template.config.pageHeight);
 
@@ -372,7 +371,7 @@ export default function PrintLabelsPage() {
     persistSheetAfterPrint(templateId, printPositions);
 
     // Wait for print dialog to close before unmounting print DOM
-    await triggerBrowserPrint();
+    await triggerBrowserPrint(printRef.current);
 
     setSuccessInfo({
       labelCount: printPositions.length,
@@ -383,29 +382,28 @@ export default function PrintLabelsPage() {
     setScreen('success');
   };
 
-  /** Same SheetRenderer as preview — this DOM node is what window.print() captures */
+  /** Portal to body — window.print() only captures this sibling of #root */
   const printSheet =
     previewData && !isDemoMode ? (
-      <div className="print-sheet-host">
-        <div ref={printRef} className="print-area">
-          <SheetRenderer
-            pageConfig={previewData.template.config}
-            layoutConfig={previewData.layout.config}
-            calibration={previewData.calibration}
-            usedPositions={previewData.usedPositions}
-            printPositions={previewData.printPositions}
-            positionLabelMap={previewData.positionLabelMap.map((p) => ({
-              position: p.position,
-              label: p.label?.values ?? null,
-            }))}
-            brandName={shop?.brandName}
-            logoUrl={shop?.logoUrl}
-            showGrid={false}
-            showPositionNumbers={false}
-            unit="mm"
-          />
-        </div>
-      </div>
+      <PrintSheetPortal innerRef={printRef}>
+        <SheetRenderer
+          pageConfig={previewData.template.config}
+          layoutConfig={previewData.layout.config}
+          calibration={previewData.calibration}
+          usedPositions={previewData.usedPositions}
+          printPositions={previewData.printPositions}
+          positionLabelMap={previewData.positionLabelMap.map((p) => ({
+            position: p.position,
+            label: p.label?.values ?? null,
+          }))}
+          brandName={shop?.brandName}
+          logoUrl={shop?.logoUrl}
+          showGrid={false}
+          showPositionNumbers={false}
+          scale={PRINT_SCALE}
+          unit="px"
+        />
+      </PrintSheetPortal>
     ) : null;
 
   if (!isDemoMode && (loadingShop || loadingLabels)) return <LoadingSpinner />;

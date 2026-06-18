@@ -19,11 +19,25 @@ function injectPageSizeStyle(pageSize: string): void {
   styleEl.textContent = `@media print { @page { size: ${pageSize}; margin: 0; } }`;
 }
 
-export function triggerBrowserPrint(pageSize?: string): Promise<void> {
-  return new Promise((resolve) => {
-    if (pageSize) injectPageSizeStyle(pageSize);
-    else injectPageSizeStyle(activePageSize);
+async function waitForPrintLayout(element?: HTMLElement | null): Promise<void> {
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+  if (element) {
+    void element.offsetHeight;
+  }
+}
 
+export async function triggerBrowserPrint(
+  element?: HTMLElement | null,
+  pageSize?: string
+): Promise<void> {
+  if (pageSize) injectPageSizeStyle(pageSize);
+  else injectPageSizeStyle(activePageSize);
+
+  await waitForPrintLayout(element);
+
+  return new Promise((resolve) => {
     let settled = false;
     const finish = () => {
       if (settled) return;
