@@ -1,17 +1,9 @@
-import { Link, useLocation, Navigate } from 'react-router-dom';
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Printer, Tags, FileStack, PenTool, Sliders, Store, LogOut, Lock, FolderTree } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
-import { AdminLoginModal } from './AdminLoginModal';
-import { api } from '../services/api';
+import { Link, useLocation } from 'react-router-dom';
+import { Printer, Tags, FileStack, PenTool, Sliders, Store, FolderTree } from 'lucide-react';
 
-const userNav = [
+const nav = [
   { to: '/', label: 'Print Labels', icon: Printer },
-  { to: '/labels', label: 'Label Data', icon: Tags },
-];
-
-const adminNav = [
+  { to: '/labels', label: 'Products', icon: Tags },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree },
   { to: '/admin/formats', label: 'Sticker Formats', icon: FileStack },
   { to: '/admin/designs', label: 'Label Design', icon: PenTool },
@@ -19,15 +11,13 @@ const adminNav = [
   { to: '/admin/shop', label: 'Shop Setup', icon: Store },
 ];
 
+function isNavActive(pathname: string, to: string): boolean {
+  if (to === '/') return pathname === '/';
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { isAdmin, login, setup, logout } = useAuthStore();
-  const [showLogin, setShowLogin] = useState(false);
-
-  const { data: adminStatus } = useQuery({
-    queryKey: ['adminStatus'],
-    queryFn: api.settings.getAdminStatus,
-  });
 
   return (
     <div className="flex min-h-screen">
@@ -38,92 +28,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-          {userNav.map(({ to, label, icon: Icon }) => {
-            const active = location.pathname === to;
+          {nav.map(({ to, label, icon: Icon }) => {
+            const active = isNavActive(location.pathname, to);
             return (
               <Link
                 key={to}
                 to={to}
-                className={`flex min-h-[52px] items-center gap-3 rounded-2xl px-5 py-4 text-xl font-bold transition ${
+                className={`flex min-h-[48px] items-center gap-3 rounded-2xl px-5 py-3 text-lg font-semibold transition ${
                   active
                     ? 'bg-brand-600 text-white shadow-md'
                     : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                <Icon className="h-7 w-7" />
+                <Icon className="h-6 w-6 shrink-0" />
                 {label}
               </Link>
             );
           })}
-
-          {isAdmin && (
-            <>
-              <div className="my-4 border-t border-slate-200 pt-4">
-                <p className="mb-2 px-2 text-xs font-bold uppercase tracking-wide text-slate-400">
-                  Admin
-                </p>
-              </div>
-              {adminNav.map(({ to, label, icon: Icon }) => {
-                const active = location.pathname === to;
-                return (
-                  <Link
-                    key={to}
-                    to={to}
-                    className={`flex min-h-[48px] items-center gap-3 rounded-2xl px-5 py-3 text-lg font-semibold transition ${
-                      active
-                        ? 'bg-slate-800 text-white'
-                        : 'text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <Icon className="h-6 w-6" />
-                    {label}
-                  </Link>
-                );
-              })}
-            </>
-          )}
         </nav>
-
-        <div className="border-t border-slate-200 p-4">
-          {isAdmin ? (
-            <button
-              type="button"
-              onClick={logout}
-              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl text-base font-semibold text-slate-600 hover:bg-slate-100"
-            >
-              <LogOut className="h-5 w-5" />
-              Lock Admin
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowLogin(true)}
-              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl text-base font-semibold text-slate-500 hover:bg-slate-100"
-            >
-              <Lock className="h-5 w-5" />
-              Admin
-            </button>
-          )}
-        </div>
       </aside>
 
       <main className="app-main no-print ml-72 min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
-
-      <AdminLoginModal
-        open={showLogin}
-        passwordSet={adminStatus?.passwordSet ?? false}
-        onClose={() => setShowLogin(false)}
-        onLogin={login}
-        onSetup={setup}
-      />
     </div>
   );
-}
-
-export function AdminRoute({ children }: { children: React.ReactNode }) {
-  const isAdmin = useAuthStore((s) => s.isAdmin);
-  if (!isAdmin) return <Navigate to="/" replace />;
-  return <>{children}</>;
 }
 
 export function PageHeader({

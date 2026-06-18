@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Layout, AdminRoute } from './components/Layout';
+import { Layout } from './components/Layout';
 import PrintLabelsPage from './pages/PrintLabelsPage';
 import LabelsPage from './pages/LabelsPage';
 import TemplatesPage from './pages/TemplatesPage';
@@ -31,19 +31,19 @@ export default function App() {
             <Route path="/" element={<PrintLabelsPage />} />
             <Route path="/labels" element={<LabelsPage />} />
 
-            <Route path="/admin/categories" element={<AdminRoute><CategoriesPage /></AdminRoute>} />
-            <Route path="/admin/categories/new" element={<AdminRoute><CategoryEditPage /></AdminRoute>} />
-            <Route path="/admin/categories/:id" element={<AdminRoute><CategoryEditPage /></AdminRoute>} />
-            <Route path="/admin/formats" element={<AdminRoute><TemplatesPage /></AdminRoute>} />
-            <Route path="/admin/formats/new" element={<AdminRoute><TemplateDesignerPage /></AdminRoute>} />
-            <Route path="/admin/formats/:id/edit" element={<AdminRoute><TemplateDesignerPage /></AdminRoute>} />
-            <Route path="/admin/formats/:id/measure" element={<AdminRoute><MeasureStickerSheetPage /></AdminRoute>} />
-            <Route path="/admin/formats/new/measure" element={<AdminRoute><MeasureStickerSheetPage /></AdminRoute>} />
-            <Route path="/admin/designs" element={<AdminRoute><LayoutsPage /></AdminRoute>} />
-            <Route path="/admin/designs/new" element={<AdminRoute><LayoutDesignerPage /></AdminRoute>} />
-            <Route path="/admin/designs/:id/edit" element={<AdminRoute><LayoutDesignerPage /></AdminRoute>} />
-            <Route path="/admin/adjustment" element={<AdminRoute><SettingsPage /></AdminRoute>} />
-            <Route path="/admin/shop" element={<AdminRoute><ShopSetupPage /></AdminRoute>} />
+            <Route path="/admin/categories" element={<CategoriesPage />} />
+            <Route path="/admin/categories/new" element={<CategoryEditPage />} />
+            <Route path="/admin/categories/:id" element={<CategoryEditPage />} />
+            <Route path="/admin/formats" element={<TemplatesPage />} />
+            <Route path="/admin/formats/new" element={<TemplateDesignerPage />} />
+            <Route path="/admin/formats/:id/edit" element={<TemplateDesignerPage />} />
+            <Route path="/admin/formats/:id/measure" element={<MeasureStickerSheetPage />} />
+            <Route path="/admin/formats/new/measure" element={<MeasureStickerSheetPage />} />
+            <Route path="/admin/designs" element={<LayoutsPage />} />
+            <Route path="/admin/designs/new" element={<LayoutDesignerPage />} />
+            <Route path="/admin/designs/:id/edit" element={<LayoutDesignerPage />} />
+            <Route path="/admin/adjustment" element={<SettingsPage />} />
+            <Route path="/admin/shop" element={<ShopSetupPage />} />
 
             <Route path="/history" element={<Navigate to="/" replace />} />
             <Route path="/print" element={<Navigate to="/" replace />} />
