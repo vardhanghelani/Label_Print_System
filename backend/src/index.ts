@@ -3,6 +3,7 @@ import cors from 'cors';
 import { config } from './config/index.js';
 import { connectDatabase } from './config/database.js';
 import { runAllMigrations } from './scripts/migrateLegacyProducts.js';
+import { ensureJewellerySheet } from './scripts/ensureJewellerySheet.js';
 import { errorHandler, notFoundHandler } from './middleware/index.js';
 import templatesRouter from './routes/templates.js';
 import layoutsRouter from './routes/layouts.js';
@@ -37,6 +38,8 @@ async function start() {
     if (products > 0 || layouts > 0) {
       console.log(`Migration: ${products} product(s), ${layouts} layout(s) updated.`);
     }
+    const sheet = await ensureJewellerySheet();
+    console.log(`Jewellery sheet ready (template ${sheet.templateId}, layout ${sheet.layoutId}).`);
     app.listen(config.port, () => {
       console.log(`Server running on http://localhost:${config.port}`);
     });

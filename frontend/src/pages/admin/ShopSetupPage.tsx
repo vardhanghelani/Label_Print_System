@@ -3,14 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Save } from 'lucide-react';
 import { api } from '../../services/api';
 import { PageHeader, LoadingSpinner } from '../../components/Layout';
-import type { Template, Layout } from '../../types';
+import { JEWELLERY_SHEET_NAME } from '../../lib/jewellerySheet';
 
 export default function ShopSetupPage() {
   const queryClient = useQueryClient();
   const [brandName, setBrandName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
-  const [defaultTemplateId, setDefaultTemplateId] = useState('');
-  const [defaultLayoutId, setDefaultLayoutId] = useState('');
   const [defaultSheetBehavior, setDefaultSheetBehavior] = useState<'newSheet' | 'continueSheet'>('newSheet');
   const [saved, setSaved] = useState(false);
 
@@ -19,23 +17,10 @@ export default function ShopSetupPage() {
     queryFn: api.settings.getShop,
   });
 
-  const { data: templates } = useQuery({
-    queryKey: ['templates'],
-    queryFn: api.templates.list,
-  });
-
-  const { data: layouts } = useQuery({
-    queryKey: ['layouts', defaultTemplateId],
-    queryFn: () => api.layouts.list(defaultTemplateId || undefined),
-    enabled: !!defaultTemplateId,
-  });
-
   useEffect(() => {
     if (shop) {
       setBrandName(shop.brandName);
       setLogoUrl(shop.logoUrl ?? '');
-      setDefaultTemplateId(shop.defaultTemplateId ?? '');
-      setDefaultLayoutId(shop.defaultLayoutId ?? '');
       setDefaultSheetBehavior(shop.defaultSheetBehavior ?? 'newSheet');
     }
   }, [shop]);
@@ -55,7 +40,7 @@ export default function ShopSetupPage() {
     <div className="mx-auto max-w-2xl">
       <PageHeader
         title="Shop Setup"
-        subtitle="Set once — applies everywhere automatically"
+        subtitle="Your shop name and print preferences"
       />
 
       <form
@@ -64,13 +49,22 @@ export default function ShopSetupPage() {
           saveMutation.mutate({
             brandName,
             logoUrl,
-            defaultTemplateId,
-            defaultLayoutId,
             defaultSheetBehavior,
+            defaultTemplateId: shop?.defaultTemplateId,
+            defaultLayoutId: shop?.defaultLayoutId,
           });
         }}
         className="card space-y-6"
       >
+        <div className="rounded-xl bg-brand-50 px-5 py-4">
+          <p className="font-semibold text-brand-800">Sticker Sheet (fixed)</p>
+          <p className="mt-1 text-slate-700">{JEWELLERY_SHEET_NAME}</p>
+          <p className="text-sm text-slate-600">137×172 mm · 14 interlocking jewellery stickers</p>
+          <p className="mt-2 text-sm text-slate-500">
+            After your first print, use <strong>Print Adjustment</strong> to fine-tune alignment.
+          </p>
+        </div>
+
         <div>
           <label className="label-text">Store Name</label>
           <input
@@ -79,9 +73,7 @@ export default function ShopSetupPage() {
             onChange={(e) => setBrandName(e.target.value)}
             placeholder="e.g. ABC Jewellers"
           />
-          <p className="mt-2 text-base text-slate-500">
-            Appears on every label automatically. Set once — never type again.
-          </p>
+          <p className="mt-2 text-base text-slate-500">Appears on every label automatically.</p>
         </div>
 
         <div>
@@ -92,42 +84,6 @@ export default function ShopSetupPage() {
             onChange={(e) => setLogoUrl(e.target.value)}
             placeholder="Paste logo image link"
           />
-        </div>
-
-        <div>
-          <label className="label-text">Default Sticker Format</label>
-          <select
-            className="input-field"
-            value={defaultTemplateId}
-            onChange={(e) => {
-              setDefaultTemplateId(e.target.value);
-              setDefaultLayoutId('');
-            }}
-          >
-            <option value="">Select format...</option>
-            {templates?.map((t: Template) => (
-              <option key={t._id} value={t._id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="label-text">Default Label Design</label>
-          <select
-            className="input-field"
-            value={defaultLayoutId}
-            onChange={(e) => setDefaultLayoutId(e.target.value)}
-            disabled={!defaultTemplateId}
-          >
-            <option value="">Select design...</option>
-            {layouts?.map((l: Layout) => (
-              <option key={l._id} value={l._id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
         </div>
 
         <div>

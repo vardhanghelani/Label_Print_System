@@ -6,47 +6,21 @@ import { Label } from './models/Label.js';
 import { Category } from './models/Category.js';
 import { Settings } from './models/Settings.js';
 import { User } from './models/User.js';
-import { DEFAULT_CALIBRATION, buildInterlockPageConfig } from './types/index.js';
+import { DEFAULT_CALIBRATION } from './types/index.js';
 import type { CategoryFieldDefinition } from './types/category.js';
+import {
+  buildJewellerySheetConfig,
+  JEWELLERY_SHEET_NAME,
+  JEWELLERY_LAYOUT_NAME,
+} from './scripts/ensureJewellerySheet.js';
+
+const JEWELLERY_TEMPLATE_CONFIG = buildJewellerySheetConfig();
 
 const SAMPLE_TEMPLATES = [
   {
-    name: 'Jewellery Tag Sheet 14',
-    description: 'Interlocking jewellery sticker sheet — 14 stickers (137×172 mm)',
-    config: buildInterlockPageConfig(137, 172, {
-      stickerCount: 14,
-      topMargin: 13,
-      bottomMargin: 13,
-      leftMargin: 5,
-      rightMargin: 5,
-      broadWidth: 62,
-      broadHeight: 9,
-      tailWidth: 61,
-      tailHeight: 5,
-      sectionA: { x: 0, y: 0, width: 31.1, height: 9 },
-      sectionB: { x: 31.1, y: 0, width: 30.9, height: 9 },
-      verticalPitch: 9,
-    }),
-  },
-  {
-    name: '48 Labels Per Sheet',
-    description: 'Compact A4 sheet with 48 labels (6×8)',
-    config: {
-      pageWidth: 210,
-      pageHeight: 297,
-      rows: 8,
-      columns: 6,
-      stickerWidth: 30,
-      stickerHeight: 20,
-      horizontalGap: 2,
-      verticalGap: 2,
-      topMargin: 8,
-      bottomMargin: 8,
-      leftMargin: 6,
-      rightMargin: 6,
-      printableAreaWidth: 198,
-      printableAreaHeight: 281,
-    },
+    name: JEWELLERY_SHEET_NAME,
+    description: '137×172 mm interlocking jewellery sheet — 14 stickers',
+    config: JEWELLERY_TEMPLATE_CONFIG,
   },
 ];
 
@@ -134,7 +108,7 @@ async function seed() {
   });
 
   const defaultLayout = await Layout.create({
-    name: 'Ring Label Layout',
+    name: JEWELLERY_LAYOUT_NAME,
     templateId: defaultTemplate._id,
     config: {
       categoryId: ringCategory._id,

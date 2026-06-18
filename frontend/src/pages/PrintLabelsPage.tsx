@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -22,7 +21,7 @@ import { WastageCounter } from '../components/WastageCounter';
 import { SheetPreviewFrame } from '../components/PreviewFrame';
 import { triggerBrowserPrint, setPrintPageSize } from '../lib/printExport';
 import { PREVIEW_SCALE } from '../lib/units';
-import { computePrintPositions, filterLabels, getEffectivePageConfig, productSummaryLine } from '../types';
+import { computePrintPositions, filterLabels, productSummaryLine } from '../types';
 import { clearSheetState, saveSheetState } from '../lib/sheetState';
 import {
   DEMO_PRODUCTS,
@@ -32,6 +31,11 @@ import {
   getDemoLabelData,
   productDisplayLine,
 } from '../lib/demoData';
+import {
+  resolveJewelleryTemplate,
+  resolveJewelleryLayout,
+  JEWELLERY_SHEET_NAME,
+} from '../lib/jewellerySheet';
 import { buildWastageStats } from '../lib/wastageStats';
 import type { Label, Template, PrintJob, Layout, Category } from '../types';
 
@@ -108,7 +112,7 @@ export default function PrintLabelsPage() {
     queryFn: api.settings.getShop,
   });
 
-  const { data: templates, isLoading: loadingTemplates } = useQuery({
+  const { data: templates } = useQuery({
     queryKey: ['templates'],
     queryFn: api.templates.list,
     enabled: !isDemoMode,
@@ -126,10 +130,10 @@ export default function PrintLabelsPage() {
     enabled: !isDemoMode,
   });
 
-  const { data: layouts, isLoading: loadingLayouts } = useQuery({
-    queryKey: ['layouts', templateId],
-    queryFn: () => api.layouts.list(templateId ?? undefined),
-    enabled: !!templateId && !isDemoMode,
+  const { data: layouts } = useQuery({
+    queryKey: ['layouts', templateId ?? shop?.defaultTemplateId],
+    queryFn: () => api.layouts.list((templateId ?? shop?.defaultTemplateId) ?? undefined),
+    enabled: !!(templateId ?? shop?.defaultTemplateId) && !isDemoMode,
   });
 
   const { data: categories } = useQuery({
@@ -172,60 +176,31 @@ export default function PrintLabelsPage() {
   }, [usedPositions, templateId, sheetIntent]);
 
   useEffect(() => {
-    if (isDemoMode || !templates?.length) return;
-
-    const defaultValid =
-      shop?.defaultTemplateId && templates.some((t) => t._id === shop.defaultTemplateId);
-    const resolvedId = defaultValid
-      ? shop!.defaultTemplateId!
-      : templates[0]._id;
-
-    if (!templateId || !templates.some((t) => t._id === templateId)) {
-      setTemplateId(resolvedId);
+    if (isDemoMode || !shop) return;
+    if (shop.defaultTemplateId && templateId !== shop.defaultTemplateId) {
+      setTemplateId(shop.defaultTemplateId);
     }
-  }, [isDemoMode, shop, templates, templateId, setTemplateId]);
-
-  useEffect(() => {
-    if (isDemoMode || !templateId || !layouts?.length) return;
-
-    const defaultValid =
-      shop?.defaultLayoutId && layouts.some((l) => l._id === shop.defaultLayoutId);
-    const resolvedId = defaultValid ? shop!.defaultLayoutId! : layouts[0]._id;
-
-    if (!layoutId || !layouts.some((l) => l._id === layoutId)) {
-      setLayoutId(resolvedId);
+    if (shop.defaultLayoutId && layoutId !== shop.defaultLayoutId) {
+      setLayoutId(shop.defaultLayoutId);
     }
-  }, [isDemoMode, shop, layouts, templateId, layoutId, setLayoutId]);
+  }, [isDemoMode, shop, templateId, layoutId, setTemplateId, setLayoutId]);
 
-  const activeTemplate: Template | undefined = useMemo(() => {
+  const activeTemplate = useMemo(() => {
     if (isDemoMode) return DEMO_TEMPLATE;
-    if (!templates?.length) return undefined;
-    if (templateId) {
-      const found = templates.find((t) => t._id === templateId);
-      if (found) return found;
-    }
-    return templates[0];
-  }, [isDemoMode, templates, templateId]);
+    return resolveJewelleryTemplate(templates);
+  }, [isDemoMode, templates]);
 
-  const activeLayout: Layout | undefined = useMemo(() => {
+  const activeLayout = useMemo(() => {
     if (isDemoMode) return DEMO_LAYOUT;
-    if (!layouts?.length) return undefined;
-    if (layoutId) {
-      const found = layouts.find((l) => l._id === layoutId);
-      if (found) return found;
-    }
-    return layouts[0];
-  }, [isDemoMode, layouts, layoutId]);
+    return resolveJewelleryLayout(layouts, activeTemplate);
+  }, [isDemoMode, layouts, activeTemplate]);
 
   const activeLabels = useMemo(
     () => (isDemoMode ? DEMO_PRODUCTS : (labels ?? EMPTY_LABELS)),
     [isDemoMode, labels]
   );
 
-  const pageConfig = useMemo(
-    () => (activeTemplate?.config ? getEffectivePageConfig(activeTemplate.config) : undefined),
-    [activeTemplate?.config, activeTemplate?._id]
-  );
+  const pageConfig = useMemo(() => activeTemplate.config, [activeTemplate]);
 
   const printPositions = useMemo(
     () =>
@@ -257,16 +232,14 @@ export default function PrintLabelsPage() {
   );
 
   const wastageStats = useMemo(() => {
-    const config =
-      pageConfig ?? templates?.[0]?.config ?? (isDemoMode ? DEMO_TEMPLATE.config : undefined);
-    if (!config) return null;
+    if (!pageConfig) return null;
     return buildWastageStats(
-      config,
+      pageConfig,
       usedPositions,
       printPositions,
       (history as PrintJob[]) ?? []
     );
-  }, [pageConfig, templates, usedPositions, printPositions, history, isDemoMode]);
+  }, [pageConfig, usedPositions, printPositions, history]);
 
   const firstLabelData = useMemo(() => {
     const id = selectedLabelIds[0];
@@ -274,14 +247,6 @@ export default function PrintLabelsPage() {
     if (isDemoMode) return getDemoLabelData(id);
     return labels?.find((l) => l._id === id)?.values ?? null;
   }, [selectedLabelIds, isDemoMode, labels]);
-
-  const step2Loading =
-    quickStep === 2 &&
-    !isDemoMode &&
-    (loadingTemplates || loadingShop || (!!templateId && loadingLayouts));
-
-  const step2MissingSetup =
-    quickStep === 2 && !isDemoMode && !loadingTemplates && !loadingShop && !pageConfig;
 
   const saveHistoryMutation = useMutation({
     mutationFn: api.printJobs.create,
@@ -344,8 +309,8 @@ export default function PrintLabelsPage() {
 
   const handleProceedToPrint = async () => {
     setConfirmError('');
-    if (!activeLayout) {
-      setConfirmError('No label design found. Create one under Label Design or set a default in Shop Setup.');
+    if (!activeLayout || !templateId || !layoutId) {
+      setConfirmError('Connecting to print server… please wait a moment and try again.');
       setShowConfirm(true);
       return;
     }
@@ -497,7 +462,7 @@ export default function PrintLabelsPage() {
 
   if (screen === 'quickPrint') {
     const storeName = isDemoMode ? 'ABC Jewellers (Demo)' : (shop?.brandName ?? '');
-    const sheetFormat = activeTemplate?.name ?? 'Default';
+    const sheetFormat = JEWELLERY_SHEET_NAME;
 
     return (
       <div className="mx-auto max-w-4xl">
@@ -568,48 +533,13 @@ export default function PrintLabelsPage() {
           </div>
         )}
 
-        {quickStep === 2 && step2Loading && (
-          <div className="card flex flex-col items-center py-16">
-            <LoadingSpinner />
-            <p className="mt-4 text-xl text-slate-600">Loading sticker sheet…</p>
-          </div>
-        )}
-
-        {quickStep === 2 && step2MissingSetup && (
+        {quickStep === 2 && (
           <div className="card">
-            <h2 className="mb-2 text-3xl font-bold">Setup Required</h2>
-            <p className="mb-6 text-xl text-slate-600">
-              No sticker format is configured yet. Create a sticker sheet format first, then try again.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Link to="/admin/formats" className="btn-primary">
-                Sticker Formats
-              </Link>
-              <Link to="/admin/shop" className="btn-secondary">
-                Shop Setup
-              </Link>
-              <button type="button" className="btn-secondary" onClick={() => setQuickStep(1)}>
-                Back to Products
-              </button>
-            </div>
-          </div>
-        )}
-
-        {quickStep === 2 && pageConfig && !step2Loading && (
-          <div className="card">
-            {!activeLayout && (
-              <p className="mb-4 rounded-2xl bg-amber-50 px-5 py-4 text-lg font-semibold text-amber-900">
-                No label design yet — you can still pick sticker positions.{' '}
-                <Link to="/admin/designs" className="underline">
-                  Create a label design
-                </Link>{' '}
-                to enable print preview.
-              </p>
-            )}
             <h2 className="mb-2 text-3xl font-bold">Step 2 — Choose Sticker Position</h2>
-            <p className="mb-6 text-xl text-slate-600">
+            <p className="mb-2 text-xl text-slate-600">
               Tap the first empty sticker where you want to start.
             </p>
+            <p className="mb-6 text-lg font-medium text-brand-700">{JEWELLERY_SHEET_NAME} · 137×172 mm · 14 stickers</p>
 
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <button
@@ -720,7 +650,7 @@ export default function PrintLabelsPage() {
                 type="button"
                 className="btn-xl"
                 onClick={handleProceedToPrint}
-                disabled={printPositions.length === 0 || !activeLayout}
+                disabled={printPositions.length === 0 || !templateId || !layoutId}
               >
                 Print
                 <ChevronRight className="h-6 w-6" />

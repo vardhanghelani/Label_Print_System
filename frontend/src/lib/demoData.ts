@@ -1,89 +1,16 @@
-import type { Label, Template, Layout, PreviewData, LayoutConfig, ProductValues } from '../types';
+import type { Label, PreviewData, ProductValues } from '../types';
 import { DEFAULT_CALIBRATION } from '../types';
-import { buildInterlockPageConfig } from '../lib/geometryBuilder';
+import {
+  JEWELLERY_TEMPLATE,
+  JEWELLERY_LAYOUT,
+  JEWELLERY_SHEET_CONFIG,
+  JEWELLERY_LAYOUT_CONFIG,
+} from './jewellerySheet';
 
 export const DEMO_CATEGORY_ID = 'demo-ring';
 
-export const DEMO_TEMPLATE_CONFIG = buildInterlockPageConfig(137, 172, {
-  stickerCount: 14,
-  topMargin: 13,
-  bottomMargin: 13,
-  leftMargin: 5,
-  rightMargin: 5,
-  broadWidth: 62,
-  broadHeight: 9,
-  tailWidth: 61,
-  tailHeight: 5,
-  sectionA: { x: 0, y: 0, width: 31.1, height: 9 },
-  sectionB: { x: 31.1, y: 0, width: 30.9, height: 9 },
-  verticalPitch: 9,
-});
-
-export const DEMO_LAYOUT_CONFIG: LayoutConfig = {
-  categoryId: DEMO_CATEGORY_ID,
-  fields: [
-    {
-      id: 'd1',
-      type: 'categoryField',
-      fieldKey: 'design_number',
-      label: 'Design Number',
-      section: 'A',
-      x: 0.5,
-      y: 0.3,
-      width: 30,
-      height: 4,
-      fontSize: 7,
-      bold: true,
-      italic: false,
-      alignment: 'left',
-    },
-    {
-      id: 'd2',
-      type: 'categoryField',
-      fieldKey: 'weight',
-      label: 'Weight',
-      section: 'A',
-      x: 0.5,
-      y: 5,
-      width: 30,
-      height: 3.5,
-      fontSize: 6,
-      bold: false,
-      italic: false,
-      alignment: 'left',
-    },
-    {
-      id: 'd3',
-      type: 'categoryField',
-      fieldKey: 'price',
-      label: 'Price',
-      section: 'B',
-      x: 0.5,
-      y: 0.3,
-      width: 29.5,
-      height: 4,
-      fontSize: 7,
-      bold: true,
-      italic: false,
-      alignment: 'center',
-    },
-    {
-      id: 'd4',
-      type: 'categoryField',
-      fieldKey: 'purity',
-      label: 'Purity',
-      section: 'B',
-      x: 0.5,
-      y: 5,
-      width: 29.5,
-      height: 3.5,
-      fontSize: 6,
-      bold: false,
-      italic: false,
-      alignment: 'right',
-    },
-  ],
-};
+export const DEMO_TEMPLATE_CONFIG = JEWELLERY_SHEET_CONFIG;
+export const DEMO_LAYOUT_CONFIG = JEWELLERY_LAYOUT_CONFIG;
 
 export const DEMO_PRODUCTS: Label[] = [
   {
@@ -128,22 +55,14 @@ export const DEMO_PRODUCTS: Label[] = [
   },
 ];
 
-export const DEMO_TEMPLATE: Template = {
-  _id: 'demo-template',
-  name: 'Jewellery Tag Sheet 14 (Demo)',
-  description: 'Interlocking jewellery sticker sheet — 14 stickers',
-  config: DEMO_TEMPLATE_CONFIG,
-  createdAt: '',
-  updatedAt: '',
+export const DEMO_TEMPLATE = {
+  ...JEWELLERY_TEMPLATE,
+  name: `${JEWELLERY_TEMPLATE.name} (Demo)`,
 };
 
-export const DEMO_LAYOUT: Layout = {
-  _id: 'demo-layout',
-  name: 'Ring Layout (Demo)',
-  templateId: 'demo-template',
-  config: DEMO_LAYOUT_CONFIG,
-  createdAt: '',
-  updatedAt: '',
+export const DEMO_LAYOUT = {
+  ...JEWELLERY_LAYOUT,
+  name: `${JEWELLERY_LAYOUT.name} (Demo)`,
 };
 
 export const DEMO_USED_POSITIONS = [1, 2, 3, 4, 5, 6, 7, 8];

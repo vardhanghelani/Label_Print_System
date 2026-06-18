@@ -7,8 +7,8 @@ import { PageHeader, LoadingSpinner } from '../components/Layout';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { CalibrationSheetRenderer } from '../components/render/CalibrationSheetRenderer';
 import { SheetPreviewFrame } from '../components/PreviewFrame';
-import { getEffectivePageConfig } from '../types';
-import type { CalibrationSettings, Template } from '../types';
+import { effectiveJewelleryPageConfig, JEWELLERY_SHEET_NAME } from '../lib/jewellerySheet';
+import type { CalibrationSettings } from '../types';
 import { DEFAULT_CALIBRATION } from '../types';
 import { triggerBrowserPrint } from '../lib/printExport';
 
@@ -26,23 +26,7 @@ export default function SettingsPage() {
     queryFn: api.settings.getCalibration,
   });
 
-  const { data: templates } = useQuery({
-    queryKey: ['templates'],
-    queryFn: api.templates.list,
-  });
-
-  const { data: shop } = useQuery({
-    queryKey: ['shop'],
-    queryFn: api.settings.getShop,
-  });
-
-  const calTemplate: Template | undefined =
-    templates?.find((t) => t._id === shop?.defaultTemplateId) ?? templates?.[0];
-
-  const pageConfig = useMemo(
-    () => (calTemplate ? getEffectivePageConfig(calTemplate.config) : null),
-    [calTemplate?.config, calTemplate?._id]
-  );
+  const pageConfig = useMemo(() => effectiveJewelleryPageConfig(), []);
 
   useEffect(() => {
     if (data) {
@@ -81,7 +65,7 @@ export default function SettingsPage() {
     <div>
       <PageHeader
         title="Print Adjustment"
-        subtitle="Print a calibration sheet, align with your real sticker sheet, then adjust"
+        subtitle={`Fine-tune printing for ${JEWELLERY_SHEET_NAME} (137×172 mm) after your first test print`}
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">

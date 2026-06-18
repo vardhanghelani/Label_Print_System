@@ -1,11 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Printer, Tags, FileStack, PenTool, Sliders, Store, FolderTree } from 'lucide-react';
+import { Printer, Tags, PenTool, Sliders, Store, FolderTree } from 'lucide-react';
 
 const nav = [
   { to: '/', label: 'Print Labels', icon: Printer },
   { to: '/labels', label: 'Products', icon: Tags },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree },
-  { to: '/admin/formats', label: 'Sticker Formats', icon: FileStack },
   { to: '/admin/designs', label: 'Label Design', icon: PenTool },
   { to: '/admin/adjustment', label: 'Print Adjustment', icon: Sliders },
   { to: '/admin/shop', label: 'Shop Setup', icon: Store },
