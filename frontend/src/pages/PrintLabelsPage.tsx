@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronRight,
@@ -32,12 +32,14 @@ import {
   productDisplayLine,
 } from '../lib/demoData';
 import { buildWastageStats } from '../lib/wastageStats';
-import type { Label, Template, PrintJob, Layout, PageConfig, Category } from '../types';
+import type { Label, Template, PrintJob, Layout, Category } from '../types';
 
 interface PopulatedJob extends Omit<PrintJob, 'templateId' | 'labelIds'> {
   templateId: Template | string;
   labelIds: (Label | string)[];
 }
+
+const EMPTY_LABELS: Label[] = [];
 
 function getRecentProductIds(history: PopulatedJob[], labels: Label[]): Label[] {
   const seen = new Set<string>();
@@ -141,20 +143,26 @@ export default function PrintLabelsPage() {
     return map;
   }, [categories]);
 
-  const summarizeProduct = (label: Label) => {
-    if (isDemoMode) return productDisplayLine(label);
-    return productSummaryLine(label, categoryMap.get(label.categoryId));
-  };
+  const summarizeProduct = useCallback(
+    (label: Label) => {
+      if (isDemoMode) return productDisplayLine(label);
+      return productSummaryLine(label, categoryMap.get(label.categoryId));
+    },
+    [isDemoMode, categoryMap]
+  );
 
-  useQuery({
+  const { data: calibrationData } = useQuery({
     queryKey: ['calibration'],
     queryFn: api.settings.getCalibration,
-    select: (data) => {
-      setCalibration(data);
-      return data;
-    },
     enabled: !isDemoMode,
+    staleTime: 60_000,
   });
+
+  useEffect(() => {
+    if (calibrationData) {
+      setCalibration(calibrationData);
+    }
+  }, [calibrationData, setCalibration]);
 
   useEffect(() => {
     if (templateId && sheetIntent === 'continue') {
@@ -184,19 +192,26 @@ export default function PrintLabelsPage() {
 
   const activeLayout = isDemoMode ? DEMO_LAYOUT : layouts?.find((l) => l._id === layoutId);
 
-  const activeLabels: Label[] = isDemoMode ? DEMO_PRODUCTS : (labels ?? []);
+  const activeLabels = useMemo(
+    () => (isDemoMode ? DEMO_PRODUCTS : (labels ?? EMPTY_LABELS)),
+    [isDemoMode, labels]
+  );
 
-  const pageConfig: PageConfig | undefined = activeTemplate?.config
-    ? getEffectivePageConfig(activeTemplate.config)
-    : undefined;
+  const pageConfig = useMemo(
+    () => (activeTemplate?.config ? getEffectivePageConfig(activeTemplate.config) : undefined),
+    [activeTemplate?.config, activeTemplate?._id]
+  );
 
-  const printPositions =
-    pageConfig && selectedLabelIds.length
-      ? computePrintPositions('startFrom', selectedLabelIds.length, pageConfig, {
-          startFromPosition,
-          usedPositions,
-        })
-      : [];
+  const printPositions = useMemo(
+    () =>
+      pageConfig && selectedLabelIds.length
+        ? computePrintPositions('startFrom', selectedLabelIds.length, pageConfig, {
+            startFromPosition,
+            usedPositions,
+          })
+        : [],
+    [pageConfig, selectedLabelIds.length, startFromPosition, usedPositions]
+  );
 
   const searchableKeys = useMemo(() => {
     const keys = new Set<string>();

@@ -146,9 +146,9 @@ export default function LayoutDesignerPage() {
     setSelectedFieldId(newField.id);
   };
 
-  const updateField = (fieldId: string, updates: Partial<LayoutField>) => {
-    setFields(fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)));
-  };
+  const updateField = useCallback((fieldId: string, updates: Partial<LayoutField>) => {
+    setFields((prev) => prev.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)));
+  }, []);
 
   const removeField = (fieldId: string) => {
     setFields(fields.filter((f) => f.id !== fieldId));
@@ -186,7 +186,7 @@ export default function LayoutDesignerPage() {
       }
       updateField(dragging.id, { x: Math.round(mmX * 10) / 10, y: Math.round(mmY * 10) / 10 });
     },
-    [dragging, pageConfig, fields, isJewellery, mmPerPx]
+    [dragging, pageConfig, isJewellery, mmPerPx, updateField]
   );
 
   const handleMouseUp = useCallback(() => setDragging(null), []);

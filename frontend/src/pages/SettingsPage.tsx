@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Save, Printer } from 'lucide-react';
 import { api } from '../services/api';
@@ -39,7 +39,10 @@ export default function SettingsPage() {
   const calTemplate: Template | undefined =
     templates?.find((t) => t._id === shop?.defaultTemplateId) ?? templates?.[0];
 
-  const pageConfig = calTemplate ? getEffectivePageConfig(calTemplate.config) : null;
+  const pageConfig = useMemo(
+    () => (calTemplate ? getEffectivePageConfig(calTemplate.config) : null),
+    [calTemplate?.config, calTemplate?._id]
+  );
 
   useEffect(() => {
     if (data) {

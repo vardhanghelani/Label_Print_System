@@ -49,6 +49,8 @@ function SectionEditor({
 }) {
   const scale = PREVIEW_SCALE * 3;
   const canvasRef = useRef<HTMLDivElement>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const [dragging, setDragging] = useState<'move' | 'se' | null>(null);
   const [start, setStart] = useState({ mx: 0, my: 0, section: section });
 
@@ -64,13 +66,13 @@ function SectionEditor({
       const dx = (e.clientX - start.mx) / (scale * (96 / 25.4));
       const dy = (e.clientY - start.my) / (scale * (96 / 25.4));
       if (dragging === 'move') {
-        onChange({
+        onChangeRef.current({
           ...start.section,
           x: Math.max(0, Math.min(broadWidth - start.section.width, start.section.x + dx)),
           y: Math.max(0, Math.min(broadHeight - start.section.height, start.section.y + dy)),
         });
       } else {
-        onChange({
+        onChangeRef.current({
           ...start.section,
           width: Math.max(5, Math.min(broadWidth - start.section.x, start.section.width + dx)),
           height: Math.max(2, Math.min(broadHeight - start.section.y, start.section.height + dy)),
@@ -84,7 +86,7 @@ function SectionEditor({
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [dragging, start, broadWidth, broadHeight, onChange, scale]);
+  }, [dragging, start, broadWidth, broadHeight, scale]);
 
   return (
     <div>

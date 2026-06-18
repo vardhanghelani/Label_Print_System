@@ -158,13 +158,31 @@ export function resolveStickers(config: PageConfig): StickerDefinition[] {
   return [];
 }
 
-export function getStickerDefinition(config: PageConfig, position: number): StickerDefinition | undefined {
-  return resolveStickers(config).find((st) => st.stickerNumber === position);
+const effectiveConfigCache = new Map<string, PageConfig>();
+
+function effectiveConfigCacheKey(config: PageConfig): string {
+  if (!config.geometry) {
+    return `grid:${config.pageWidth}:${config.pageHeight}:${config.rows}:${config.columns}:${config.stickerWidth}:${config.stickerHeight}`;
+  }
+  return `jewellery:${config.pageWidth}:${config.pageHeight}:${JSON.stringify(config.geometry)}`;
 }
 
 export function getEffectivePageConfig(config: PageConfig): PageConfig {
-  if (isInterlockTemplate(config) && config.geometry) return regenerateInterlockConfig(config);
-  return config;
+  if (!isInterlockTemplate(config) || !config.geometry) return config;
+  const key = effectiveConfigCacheKey(config);
+  const cached = effectiveConfigCache.get(key);
+  if (cached) return cached;
+  const result = regenerateInterlockConfig(config);
+  effectiveConfigCache.set(key, result);
+  if (effectiveConfigCache.size > 64) {
+    const oldest = effectiveConfigCache.keys().next().value;
+    if (oldest) effectiveConfigCache.delete(oldest);
+  }
+  return result;
+}
+
+export function getStickerDefinition(config: PageConfig, position: number): StickerDefinition | undefined {
+  return resolveStickers(config).find((st) => st.stickerNumber === position);
 }
 
 export function buildJewelleryPageConfig(

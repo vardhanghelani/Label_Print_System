@@ -1,7 +1,7 @@
 import { resolveStickers } from '../lib/geometryBuilder';
 import type { PageConfig } from '../types';
 import { getTotalPositions, computePrintPositions, isJewelleryTemplate } from '../types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 interface SmartPositionGridProps {
   config: PageConfig;
@@ -24,16 +24,25 @@ export function SmartPositionGrid({
 }: SmartPositionGridProps) {
   const [animatingPositions, setAnimatingPositions] = useState<number[]>([]);
   const total = getTotalPositions(config);
-  const positions = Array.from({ length: total }, (_, i) => i + 1);
+  const positions = useMemo(
+    () => Array.from({ length: total }, (_, i) => i + 1),
+    [total]
+  );
   const isJewellery = isJewelleryTemplate(config);
+  const stickers = useMemo(() => resolveStickers(config), [config]);
 
-  const printPositions = computePrintPositions('startFrom', labelCount, config, {
-    startFromPosition,
-    usedPositions,
-  });
+  const printPositions = useMemo(
+    () =>
+      computePrintPositions('startFrom', labelCount, config, {
+        startFromPosition,
+        usedPositions,
+      }),
+    [labelCount, config, startFromPosition, usedPositions]
+  );
 
-  const printSet = new Set(printPositions);
-  const usedSet = new Set(usedPositions);
+  const printPositionsKey = printPositions.join(',');
+  const printSet = useMemo(() => new Set(printPositions), [printPositionsKey]);
+  const usedSet = useMemo(() => new Set(usedPositions), [usedPositions]);
 
   useEffect(() => {
     if (markUsedMode || labelCount === 0) {
@@ -43,7 +52,7 @@ export function SmartPositionGrid({
     setAnimatingPositions(printPositions);
     const timer = setTimeout(() => setAnimatingPositions([]), 1200);
     return () => clearTimeout(timer);
-  }, [startFromPosition, labelCount, markUsedMode, printPositions.join(',')]);
+  }, [startFromPosition, labelCount, markUsedMode, printPositionsKey]);
 
   const handleClick = (pos: number) => {
     if (markUsedMode) {
@@ -119,7 +128,7 @@ export function SmartPositionGrid({
           const animDelay = isSelected
             ? `${printPositions.indexOf(pos) * 80}ms`
             : undefined;
-          const sticker = resolveStickers(config).find((s) => s.stickerNumber === pos);
+          const sticker = stickers.find((s) => s.stickerNumber === pos);
           const sideHint =
             isJewellery && sticker
               ? sticker.orientation === 'broad-left'

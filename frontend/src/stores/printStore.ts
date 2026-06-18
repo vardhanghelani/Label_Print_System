@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { CalibrationSettings, PreviewData } from '../types';
 import { DEFAULT_CALIBRATION, findFirstAvailablePosition } from '../types';
 import { loadSheetState, saveSheetState, mergeUsedAfterPrint } from '../lib/sheetState';
+import { calibrationEquals } from '../lib/calibration';
 import type { PageConfig } from '../types';
 
 export type PrintScreen = 'home' | 'quickPrint' | 'previousPrints' | 'success';
@@ -120,7 +121,10 @@ export const usePrintStore = create<PrintState>((set, get) => ({
 
   setUsedPositions: (positions) => set({ usedPositions: positions }),
   setPreviewData: (data) => set({ previewData: data }),
-  setCalibration: (calibration) => set({ calibration }),
+  setCalibration: (calibration) =>
+    set((state) =>
+      calibrationEquals(state.calibration, calibration) ? state : { calibration }
+    ),
 
   startQuickPrint: (labelIds) =>
     set({
