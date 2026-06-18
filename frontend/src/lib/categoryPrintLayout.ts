@@ -1,7 +1,18 @@
 import type { Category, Layout, LayoutField, LayoutSection } from '../types';
 import { isJewelleryTemplate, type PageConfig } from '../types';
 
-/** Auto-place category showInLabel fields on jewellery section A / B */
+/** Jewellery broad printable area — must match geometryBuilder DEFAULT_INTERLOCK_GEOMETRY */
+const JEWELLERY_BROAD_HEIGHT_MM = 9;
+const JEWELLERY_BROAD_WIDTH_MM = 62;
+/** Vertical pitch per text line inside 9mm-tall broad area */
+const JEWELLERY_LINE_PITCH_MM = 2.65;
+const JEWELLERY_MAX_LINES = Math.floor(JEWELLERY_BROAD_HEIGHT_MM / JEWELLERY_LINE_PITCH_MM);
+
+/**
+ * Auto-place category showInLabel fields inside the 62×9mm broad sticker area.
+ * Fields stack top-to-bottom on the full broad width — no left/right column split
+ * (that split caused a ~31mm gap between field 1 and field 3 on small stickers).
+ */
 export function buildAutoLayoutFields(category: Category, pageConfig?: PageConfig): LayoutField[] {
   const jewellery = pageConfig ? isJewelleryTemplate(pageConfig) : true;
   const printable = category.config.fields
@@ -10,21 +21,23 @@ export function buildAutoLayoutFields(category: Category, pageConfig?: PageConfi
 
   if (!printable.length) return [];
 
-  const half = Math.ceil(printable.length / 2);
+  const toPlace = jewellery ? printable.slice(0, JEWELLERY_MAX_LINES) : printable;
 
-  return printable.map((cf, i) => {
+  return toPlace.map((cf, i) => {
     let section: LayoutSection = 'full';
     let y = 0.3 + i * 4;
     let width = 28;
     let alignment: LayoutField['alignment'] = 'left';
+    let fontSize = i === 0 ? 7 : 6;
+    let height = 3.5;
 
     if (jewellery) {
-      const inA = i < half;
-      section = inA ? 'A' : 'B';
-      const idxInSection = inA ? i : i - half;
-      y = 0.3 + idxInSection * 4.2;
-      width = inA ? 30 : 29.5;
-      alignment = inA ? 'left' : i === half ? 'center' : 'right';
+      section = 'full';
+      y = 0.2 + i * JEWELLERY_LINE_PITCH_MM;
+      width = JEWELLERY_BROAD_WIDTH_MM - 1;
+      height = JEWELLERY_LINE_PITCH_MM;
+      fontSize = i === 0 ? 6 : 5.5;
+      alignment = 'left';
     }
 
     return {
@@ -37,14 +50,16 @@ export function buildAutoLayoutFields(category: Category, pageConfig?: PageConfi
       x: 0.5,
       y,
       width,
-      height: 3.5,
-      fontSize: i === 0 ? 7 : 6,
+      height,
+      fontSize,
       bold: i === 0,
       italic: false,
       alignment,
     };
   });
 }
+
+export { JEWELLERY_BROAD_HEIGHT_MM, JEWELLERY_BROAD_WIDTH_MM, JEWELLERY_MAX_LINES };
 
 /**
  * Resolve print fields for a category:
