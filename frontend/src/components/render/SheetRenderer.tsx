@@ -5,6 +5,7 @@ import type {
   CalibrationSettings,
   LayoutField,
   Category,
+  Layout,
 } from '../../types';
 import {
   getPositionCoordinates,
@@ -25,7 +26,9 @@ export interface SheetRenderOptions {
   positionLabelMap: Array<{ position: number; label: LabelData | null; categoryId?: string }>;
   brandName?: string;
   logoUrl?: string;
-  /** Per-sticker fields from product category (overrides layoutConfig.fields when set) */
+  templateId?: string;
+  layouts?: Layout[];
+  /** @deprecated use shared pipeline via templateId/layouts/categoriesById */
   resolveFieldsForPosition?: (position: number, categoryId?: string) => LayoutField[];
   categoriesById?: Map<string, Category>;
   showGrid?: boolean;
@@ -46,7 +49,8 @@ export function SheetRenderer({
   positionLabelMap,
   brandName,
   logoUrl,
-  resolveFieldsForPosition,
+  templateId,
+  layouts,
   categoriesById,
   showGrid = true,
   showPositionNumbers = true,
@@ -69,7 +73,8 @@ export function SheetRenderer({
         positionLabelMap={positionLabelMap}
         brandName={brandName}
         logoUrl={logoUrl}
-        resolveFieldsForPosition={resolveFieldsForPosition}
+        templateId={templateId}
+        layouts={layouts}
         categoriesById={categoriesById}
         showGrid={showGrid}
         showPositionNumbers={showPositionNumbers}

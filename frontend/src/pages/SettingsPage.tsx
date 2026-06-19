@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { PrintSheetPortal } from '../components/PrintSheetPortal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, Printer } from 'lucide-react';
+import { Save, Printer, Download } from 'lucide-react';
 import { api } from '../services/api';
 import { usePrintStore } from '../stores/printStore';
 import { PageHeader, LoadingSpinner } from '../components/Layout';
@@ -12,6 +12,7 @@ import { effectiveJewelleryPageConfig, JEWELLERY_SHEET_NAME } from '../lib/jewel
 import type { CalibrationSettings } from '../types';
 import { DEFAULT_CALIBRATION } from '../types';
 import { triggerBrowserPrint } from '../lib/printExport';
+import { exportCalibrationPdf } from '../lib/calibrationPdf';
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
@@ -20,7 +21,7 @@ export default function SettingsPage() {
   const [form, setForm] = useState<CalibrationSettings>({ ...DEFAULT_CALIBRATION });
   const [saved, setSaved] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-  const [printPageSize, setPrintPageSize] = useState('137mm 172mm');
+  const [printPageSize, setPrintPageSize] = useState('110mm 197mm');
 
   const { data, isLoading } = useQuery({
     queryKey: ['calibration'],
@@ -60,13 +61,18 @@ export default function SettingsPage() {
     await triggerBrowserPrint(printRef.current, printPageSize);
   };
 
+  const handleDownloadCalibrationPdf = () => {
+    if (!pageConfig) return;
+    exportCalibrationPdf(pageConfig, form, 'calibration-sheet.pdf');
+  };
+
   if (isLoading) return <LoadingSpinner />;
 
   return (
     <div>
       <PageHeader
         title="Print Adjustment"
-        subtitle={`Fine-tune printing for ${JEWELLERY_SHEET_NAME} (137×172 mm) after your first test print`}
+        subtitle={`Fine-tune printing for ${JEWELLERY_SHEET_NAME} (110×197 mm) after your first test print`}
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -147,6 +153,15 @@ export default function SettingsPage() {
                 <Printer className="h-5 w-5" />
                 Print Calibration Sheet
               </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleDownloadCalibrationPdf}
+                disabled={!pageConfig}
+              >
+                <Download className="h-5 w-5" />
+                Download Calibration PDF
+              </button>
             </div>
           </form>
         </div>
@@ -171,7 +186,7 @@ export default function SettingsPage() {
             <p className="text-slate-500">No template available for calibration preview.</p>
           )}
           <p className="mt-3 text-sm text-slate-500">
-            Red = page border · Blue dashed = printable area · Crosshairs = sticker centers
+            Red = page border · Blue dashed = printable area · Pink/purple = Section A/B · Crosshairs = sticker centers · Rulers every 10 mm
           </p>
         </div>
       </div>

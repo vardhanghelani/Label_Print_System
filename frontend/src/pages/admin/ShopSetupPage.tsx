@@ -59,7 +59,7 @@ export default function ShopSetupPage() {
         <div className="rounded-xl bg-brand-50 px-5 py-4">
           <p className="font-semibold text-brand-800">Sticker Sheet (fixed)</p>
           <p className="mt-1 text-slate-700">{JEWELLERY_SHEET_NAME}</p>
-          <p className="text-sm text-slate-600">137×172 mm · 14 interlocking jewellery stickers</p>
+          <p className="text-sm text-slate-600">110×197 mm · 22 interlocking jewellery stickers</p>
           <p className="mt-2 text-sm text-slate-500">
             After your first print, use <strong>Print Adjustment</strong> to fine-tune alignment.
           </p>

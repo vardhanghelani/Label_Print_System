@@ -1,0 +1,75 @@
+{
+  "passed": true,
+  "pageWidth": 110,
+  "pageHeight": 197,
+  "itemCount": 6,
+  "pdfPath": "E:\\Label_Print_System\\.verify-output\\verify-labels.pdf",
+  "pdfSizeBytes": 3791,
+  "extractedTextSamples": [
+    "Item Code: TEST001",
+    "Item Code: TEST001",
+    "Weight: 4.5",
+    "Weight: 4.5",
+    "\u0000P\u0000r\u0000i\u0000c\u0000e\u0000:\u0000  ¹\u00005\u0000,\u00000\u00000\u00000",
+    "\u0000P\u0000r\u0000i\u0000c\u0000e\u0000:\u0000  ¹\u00005\u0000,\u00000\u00000\u00000",
+    "jsPDF 2.5.2",
+    "D:20260619141318+05'30'"
+  ],
+  "renderLog": [
+    {
+      "pageWidth": 110,
+      "pageHeight": 197,
+      "stickerNumber": 1,
+      "fieldName": "Item Code",
+      "fieldValue": "Item Code: TEST001",
+      "finalX": 5.5,
+      "finalY": 4.2
+    },
+    {
+      "pageWidth": 110,
+      "pageHeight": 197,
+      "stickerNumber": 1,
+      "fieldName": "Item Code",
+      "fieldValue": "Item Code: TEST001",
+      "finalX": 30.5,
+      "finalY": 4.2
+    },
+    {
+      "pageWidth": 110,
+      "pageHeight": 197,
+      "stickerNumber": 1,
+      "fieldName": "Weight",
+      "fieldValue": "Weight: 4.5",
+      "finalX": 5.5,
+      "finalY": 7.4
+    },
+    {
+      "pageWidth": 110,
+      "pageHeight": 197,
+      "stickerNumber": 1,
+      "fieldName": "Weight",
+      "fieldValue": "Weight: 4.5",
+      "finalX": 30.5,
+      "finalY": 7.4
+    },
+    {
+      "pageWidth": 110,
+      "pageHeight": 197,
+      "stickerNumber": 1,
+      "fieldName": "Price",
+      "fieldValue": "Price: ₹5,000",
+      "finalX": 5.5,
+      "finalY": 10.600000000000001
+    },
+    {
+      "pageWidth": 110,
+      "pageHeight": 197,
+      "stickerNumber": 1,
+      "fieldName": "Price",
+      "fieldValue": "Price: ₹5,000",
+      "finalX": 30.5,
+      "finalY": 10.600000000000001
+    }
+  ],
+  "emptyPdf": false
+}

@@ -117,6 +117,7 @@ router.post(
     const positionLabelMap = printPositions.map((pos, i) => ({
       position: pos,
       label: labels[i] ?? null,
+      categoryId: labels[i]?.categoryId ? String(labels[i]!.categoryId) : undefined,
     }));
 
     res.json({

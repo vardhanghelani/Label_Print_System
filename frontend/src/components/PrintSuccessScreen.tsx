@@ -49,7 +49,7 @@ export function PrintSuccessScreen({
             <p className="font-bold">For exact sticker alignment when printing the PDF:</p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-base">
               <li>Set scale to <strong>100% / Actual size</strong> — never &quot;Fit to page&quot;</li>
-              <li>Set paper size to <strong>137 × 172 mm</strong> (custom size)</li>
+              <li>Set paper size to <strong>110 × 197 mm</strong> (custom size)</li>
               <li>Set margins to <strong>None / 0</strong></li>
               <li>If text is slightly off, use <strong>Print Adjustment</strong> in the sidebar</li>
             </ul>

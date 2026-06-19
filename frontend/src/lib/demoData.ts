@@ -1,4 +1,4 @@
-import type { Label, PreviewData, ProductValues } from '../types';
+import type { Label, PreviewData, ProductValues, Category } from '../types';
 import { DEFAULT_CALIBRATION } from '../types';
 import {
   JEWELLERY_TEMPLATE,
@@ -9,6 +9,58 @@ import {
 
 export const DEMO_CATEGORY_ID = 'demo-ring';
 
+/** Category-driven demo — no hardcoded jewellery field keys */
+export const DEMO_CATEGORY: Category = {
+  _id: DEMO_CATEGORY_ID,
+  name: 'Demo Ring',
+  description: 'Demo category for quick print preview',
+  config: {
+    fields: [
+      {
+        id: 'df1',
+        name: 'Item Code',
+        key: 'item_code',
+        datatype: 'text',
+        required: false,
+        showInSearch: true,
+        showInLabel: true,
+        visibleInForm: true,
+        editable: true,
+        readOnly: false,
+        sortOrder: 0,
+      },
+      {
+        id: 'df2',
+        name: 'Weight',
+        key: 'weight',
+        datatype: 'number',
+        required: false,
+        showInSearch: false,
+        showInLabel: true,
+        visibleInForm: true,
+        editable: true,
+        readOnly: false,
+        sortOrder: 1,
+      },
+      {
+        id: 'df3',
+        name: 'Price',
+        key: 'price',
+        datatype: 'currency',
+        required: false,
+        showInSearch: true,
+        showInLabel: true,
+        visibleInForm: true,
+        editable: true,
+        readOnly: false,
+        sortOrder: 2,
+      },
+    ],
+  },
+  createdAt: '',
+  updatedAt: '',
+};
+
 export const DEMO_TEMPLATE_CONFIG = JEWELLERY_SHEET_CONFIG;
 export const DEMO_LAYOUT_CONFIG = JEWELLERY_LAYOUT_CONFIG;
 
@@ -17,39 +69,39 @@ export const DEMO_PRODUCTS: Label[] = [
     _id: 'demo-1',
     name: 'Gold Ring R1001',
     categoryId: DEMO_CATEGORY_ID,
-    values: { design_number: 'R1001', weight: '4.350 gm', purity: '22K', price: '₹56,000' },
+    values: { item_code: 'R1001', weight: '4.350', price: '56000' },
     createdAt: '',
     updatedAt: '',
   },
   {
     _id: 'demo-2',
-    name: 'Diamond Necklace N2002',
+    name: 'Pendant P2002',
     categoryId: DEMO_CATEGORY_ID,
-    values: { design_number: 'N2002', weight: '12.800 gm', purity: '18K', price: '₹1,25,000' },
+    values: { item_code: 'P2002', weight: '12.800', price: '125000' },
     createdAt: '',
     updatedAt: '',
   },
   {
     _id: 'demo-3',
-    name: 'Gold Bracelet B3003',
+    name: 'Chain C3003',
     categoryId: DEMO_CATEGORY_ID,
-    values: { design_number: 'B3003', weight: '8.200 gm', purity: '22K', price: '₹78,500' },
+    values: { item_code: 'C3003', weight: '8.200', price: '78500' },
     createdAt: '',
     updatedAt: '',
   },
   {
     _id: 'demo-4',
-    name: 'Gold Earrings E4004',
+    name: 'Ring E4004',
     categoryId: DEMO_CATEGORY_ID,
-    values: { design_number: 'E4004', weight: '3.100 gm', purity: '22K', price: '₹42,000' },
+    values: { item_code: 'E4004', weight: '3.100', price: '42000' },
     createdAt: '',
     updatedAt: '',
   },
   {
     _id: 'demo-5',
-    name: 'Gold Chain C5005',
+    name: 'Chain C5005',
     categoryId: DEMO_CATEGORY_ID,
-    values: { design_number: 'C5005', weight: '6.500 gm', purity: '22K', price: '₹65,000' },
+    values: { item_code: 'C5005', weight: '6.500', price: '65000' },
     createdAt: '',
     updatedAt: '',
   },
@@ -80,7 +132,8 @@ export function buildDemoPreview(): PreviewData {
     printPositions: DEMO_PRINT_POSITIONS,
     positionLabelMap: DEMO_PRINT_POSITIONS.map((pos, i) => ({
       position: pos,
-      label: labels[i] ?? null,
+      label: labels[i]?.values ?? null,
+      categoryId: DEMO_CATEGORY_ID,
     })),
     usedPositions: DEMO_USED_POSITIONS,
     mode: 'startFrom',
@@ -96,6 +149,16 @@ export function getDemoLabelData(id: string): ProductValues | null {
 }
 
 export function productDisplayLine(label: Label): string {
-  const v = label.values;
-  return [v.design_number, v.weight, v.price].filter(Boolean).join(' · ');
+  return categoryFieldSummary(label, DEMO_CATEGORY);
+}
+
+function categoryFieldSummary(label: Label, category: Category): string {
+  const parts = category.config.fields
+    .filter((f) => f.showInLabel)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .slice(0, 3)
+    .map((f) => label.values[f.key])
+    .filter(Boolean)
+    .map(String);
+  return parts.join(' · ') || label.name;
 }

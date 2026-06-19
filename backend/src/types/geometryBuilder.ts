@@ -1,4 +1,5 @@
 import type { PageConfig, StickerDefinition, RectMm, LayoutType } from './index.js';
+import { validateInterlockGeometry } from './geometryValidator.js';
 
 /** Section rect relative to broad printable area origin (mm) */
 export interface SectionGeometry {
@@ -26,25 +27,37 @@ export interface InterlockSheetGeometry {
 }
 
 /** Defaults used ONLY when creating a new template — never at render time */
+/** 11 pairs × 16.5 mm + 14 mm last broad = 193 mm; top 4 mm → bottom exactly 197 mm */
 export const DEFAULT_INTERLOCK_GEOMETRY: InterlockSheetGeometry = {
-  stickerCount: 14,
-  topMargin: 13,
-  bottomMargin: 13,
+  stickerCount: 22,
+  topMargin: 4,
+  bottomMargin: 10.7,
   leftMargin: 5,
   rightMargin: 5,
-  broadWidth: 62,
-  broadHeight: 9,
-  tailWidth: 61,
-  tailHeight: 5,
-  sectionA: { x: 0, y: 0, width: 31.1, height: 9 },
-  sectionB: { x: 31.1, y: 0, width: 30.9, height: 9 },
-  verticalPitch: 9,
+  broadWidth: 50,
+  broadHeight: 14,
+  tailWidth: 49,
+  tailHeight: 2.5,
+  sectionA: { x: 0, y: 0, width: 25, height: 14 },
+  sectionB: { x: 25, y: 0, width: 25, height: 14 },
 };
 
-export const DEFAULT_INTERLOCK_PAGE = {
-  pageWidth: 137,
-  pageHeight: 172,
-};
+export const DEFAULT_INTERLOCK_PAGE = { pageWidth: 110, pageHeight: 197 };
+
+export function interlockBroadTopY(stickerNumber: number, g: InterlockSheetGeometry): number {
+  const pairHeight = g.broadHeight + g.tailHeight;
+  const pairIndex = Math.floor((stickerNumber - 1) / 2);
+  const pairTop = g.topMargin + pairIndex * pairHeight;
+
+  if (stickerNumber % 2 === 1) {
+    return pairTop;
+  }
+  return pairTop + g.broadHeight;
+}
+
+export function interlockTailYOffset(g: InterlockSheetGeometry): number {
+  return (g.broadHeight - g.tailHeight) / 2;
+}
 
 function rect(x: number, y: number, width: number, height: number): RectMm {
   return { x, y, width, height };
@@ -56,12 +69,11 @@ export function buildInterlockStickers(
   geometry: InterlockSheetGeometry
 ): StickerDefinition[] {
   const g = geometry;
-  const pitch = g.verticalPitch ?? g.broadHeight;
-  const tailYOffset = g.broadHeight - g.tailHeight;
+  const tailYOffset = interlockTailYOffset(g);
   const stickers: StickerDefinition[] = [];
 
   for (let n = 1; n <= g.stickerCount; n++) {
-    const y = g.topMargin + (n - 1) * pitch;
+    const y = interlockBroadTopY(n, g);
     const odd = n % 2 === 1;
 
     if (odd) {
@@ -107,8 +119,15 @@ export function buildInterlockStickers(
 export function buildInterlockPageConfig(
   pageWidth: number,
   pageHeight: number,
-  geometry: InterlockSheetGeometry
+  geometry: InterlockSheetGeometry,
+  options?: { skipValidation?: boolean }
 ): PageConfig {
+  if (!options?.skipValidation) {
+    const validation = validateInterlockGeometry(pageWidth, pageHeight, geometry);
+    if (!validation.valid) {
+      throw new Error(validation.issues.map((i) => i.message).join(' '));
+    }
+  }
   const stickers = buildInterlockStickers(pageWidth, pageHeight, geometry);
 
   return {
@@ -128,7 +147,7 @@ export function buildInterlockPageConfig(
     printableAreaWidth: pageWidth - geometry.leftMargin - geometry.rightMargin,
     printableAreaHeight: pageHeight - geometry.topMargin - geometry.bottomMargin,
     stickerCount: geometry.stickerCount,
-    verticalPitch: geometry.verticalPitch ?? geometry.broadHeight,
+    verticalPitch: geometry.broadHeight + geometry.tailHeight,
     geometry,
     stickers,
   };
@@ -141,7 +160,7 @@ export function regenerateInterlockConfig(config: PageConfig): PageConfig {
     ...config,
     layoutType: 'jewellery-interlock',
     stickerCount: config.geometry.stickerCount,
-    verticalPitch: config.geometry.verticalPitch ?? config.geometry.broadHeight,
+    verticalPitch: config.geometry.broadHeight + config.geometry.tailHeight,
     stickerWidth: config.geometry.broadWidth,
     stickerHeight: config.geometry.broadHeight,
     topMargin: config.geometry.topMargin,
@@ -170,10 +189,10 @@ export function getStickerDefinition(
 }
 
 export function resolveStickers(config: PageConfig): StickerDefinition[] {
-  if (config.stickers?.length) return config.stickers;
   if (config.geometry) {
     return buildInterlockStickers(config.pageWidth, config.pageHeight, config.geometry);
   }
+  if (config.stickers?.length) return config.stickers;
   return [];
 }
 

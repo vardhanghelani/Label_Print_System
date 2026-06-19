@@ -1,101 +1,24 @@
-import type { LayoutField, LabelData } from '../../types';
-import {
-  getFieldAbsoluteRect,
-  resolveFieldValue,
-  resolveProductFieldValue,
-  formatPrintFieldLine,
-  isJewelleryTemplate,
-} from '../../types';
-import type { Category } from '../../types';
+import { isJewelleryTemplate } from '../../types';
 import { resolveStickers } from '../../lib/geometryBuilder';
+import { buildPrintTextItems } from '../../lib/labelRenderPipeline';
 import {
   mmToPx,
   calibrateMm,
   formatLength,
   PREVIEW_SCALE,
   LABEL_FONT_MM_SCALE,
-  type RenderUnit,
 } from '../../lib/units';
 import type { SheetRenderOptions } from './SheetRenderer';
 
-function renderField(
-  field: LayoutField,
-  label: LabelData,
-  sticker: import('../../types').StickerDefinition,
-  unit: RenderUnit,
-  scale: number,
-  calX: (mm: number) => string,
-  calY: (mm: number) => string,
-  len: (mm: number) => string,
-  brandName?: string,
-  logoUrl?: string,
-  category?: Category
-) {
-  const rect = getFieldAbsoluteRect(field, sticker);
-  let value = category
-    ? resolveProductFieldValue(field, label, category, brandName)
-    : resolveFieldValue(field, label);
-  if (field.type === 'staticBranding' && brandName) value = brandName;
-  value = formatPrintFieldLine(field, value, category);
-
-  if (field.type === 'logo' && (value || logoUrl)) {
-    return (
-      <img
-        key={field.id}
-        src={value || logoUrl}
-        alt=""
-        className="absolute object-contain"
-        style={{
-          left: calX(rect.x),
-          top: calY(rect.y),
-          width: len(rect.width),
-          height: len(rect.height),
-          transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
-        }}
-      />
-    );
-  }
-
-  if (!value && field.type !== 'staticBranding' && field.type !== 'text') return null;
-
-  const fontSize =
-    unit === 'mm'
-      ? `${field.fontSize * LABEL_FONT_MM_SCALE}mm`
-      : `${field.fontSize * scale * LABEL_FONT_MM_SCALE}px`;
-
-  return (
-    <div
-      key={field.id}
-      className="absolute overflow-hidden leading-tight text-slate-900"
-      style={{
-        left: calX(rect.x),
-        top: calY(rect.y),
-        width: len(rect.width),
-        height: len(rect.height),
-        fontSize,
-        fontWeight: field.bold ? 'bold' : 'normal',
-        fontStyle: field.italic ? 'italic' : 'normal',
-        textAlign: field.alignment,
-        lineHeight: field.lineSpacing ? `${field.lineSpacing}` : undefined,
-        transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
-        transformOrigin: 'top left',
-      }}
-    >
-      {value}
-    </div>
-  );
-}
-
 export function JewellerySheetRenderer({
   pageConfig,
-  layoutConfig,
   calibration,
   usedPositions,
   printPositions,
   positionLabelMap,
   brandName,
-  logoUrl,
-  resolveFieldsForPosition,
+  templateId,
+  layouts,
   categoriesById,
   showGrid = true,
   showPositionNumbers = true,
@@ -110,10 +33,6 @@ export function JewellerySheetRenderer({
 
   const printSet = new Set(printPositions);
   const usedSet = new Set(usedPositions);
-  const labelMap = new Map(positionLabelMap.map((p) => [p.position, p.label]));
-  const categoryMap = new Map(
-    positionLabelMap.filter((p) => p.categoryId).map((p) => [p.position, p.categoryId!])
-  );
 
   const calX = (mm: number) =>
     formatLength(calibrateMm(mm, calibration.horizontalOffset, calibration.scaleX), unit, scale);
@@ -121,11 +40,21 @@ export function JewellerySheetRenderer({
     formatLength(calibrateMm(mm, calibration.verticalOffset, calibration.scaleY), unit, scale);
   const len = (mm: number) => formatLength(mm, unit, scale);
 
+  const printItems = buildPrintTextItems({
+    pageConfig,
+    calibration,
+    printPositions,
+    positionLabelMap,
+    categoriesById,
+    brandName,
+    templateId,
+    layouts,
+  }).items;
+
   const stickerElements = stickers.map((sticker) => {
     const position = sticker.stickerNumber;
     const isUsed = usedSet.has(position);
     const isSelected = printSet.has(position);
-    const label = labelMap.get(position);
 
     let broadBg = '#ffffff';
     if (isUsed) broadBg = '#cbd5e1';
@@ -183,27 +112,35 @@ export function JewellerySheetRenderer({
             {position}
           </span>
         )}
-        {label &&
-          (resolveFieldsForPosition
-            ? resolveFieldsForPosition(position, categoryMap.get(position))
-            : layoutConfig.fields
-          ).map((field) =>
-            renderField(
-              field,
-              label,
-              sticker,
-              unit,
-              scale,
-              calX,
-              calY,
-              len,
-              brandName,
-              logoUrl,
-              categoryMap.get(position)
-                ? categoriesById?.get(categoryMap.get(position)!)
-                : undefined
-            )
-          )}
+        {printItems
+          .filter((item) => item.stickerNumber === position)
+          .map((item) => {
+            const field = item.field;
+            const fontSize =
+              unit === 'mm'
+                ? `${field.fontSize * LABEL_FONT_MM_SCALE}mm`
+                : `${field.fontSize * scale * LABEL_FONT_MM_SCALE}px`;
+            return (
+              <div
+                key={item.fieldId}
+                className="absolute overflow-hidden leading-tight text-slate-900"
+                style={{
+                  left: calX(item.rect.x),
+                  top: calY(item.rect.y),
+                  width: len(item.rect.width),
+                  height: len(item.rect.height),
+                  fontSize,
+                  fontWeight: field.bold ? 'bold' : 'normal',
+                  fontStyle: field.italic ? 'italic' : 'normal',
+                  textAlign: field.alignment,
+                  transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
+                  transformOrigin: 'top left',
+                }}
+              >
+                {item.text}
+              </div>
+            );
+          })}
       </div>
     );
   });

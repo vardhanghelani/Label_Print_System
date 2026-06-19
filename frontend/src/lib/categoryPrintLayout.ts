@@ -2,16 +2,58 @@ import type { Category, Layout, LayoutField, LayoutSection } from '../types';
 import { isJewelleryTemplate, type PageConfig } from '../types';
 
 /** Jewellery broad printable area — must match geometryBuilder DEFAULT_INTERLOCK_GEOMETRY */
-const JEWELLERY_BROAD_HEIGHT_MM = 9;
-const JEWELLERY_BROAD_WIDTH_MM = 62;
-/** Vertical pitch per text line inside 9mm-tall broad area */
-const JEWELLERY_LINE_PITCH_MM = 2.85;
-const JEWELLERY_MAX_LINES = Math.min(3, Math.floor(JEWELLERY_BROAD_HEIGHT_MM / JEWELLERY_LINE_PITCH_MM));
+const JEWELLERY_BROAD_HEIGHT_MM = 14;
+const JEWELLERY_BROAD_WIDTH_MM = 50;
+const JEWELLERY_SECTION_WIDTH_MM = 25;
+/** Vertical pitch per text line inside 14mm-tall broad area */
+const JEWELLERY_LINE_PITCH_MM = 3.2;
+const JEWELLERY_MAX_LINES = Math.min(
+  4,
+  Math.floor((JEWELLERY_BROAD_HEIGHT_MM - 0.4) / JEWELLERY_LINE_PITCH_MM)
+);
 
 /**
- * Auto-place category showInLabel fields inside the 62×9mm broad sticker area.
- * Fields stack top-to-bottom on the full broad width — no left/right column split
- * (that split caused a ~31mm gap between field 1 and field 3 on small stickers).
+ * Duplicate each field into Section A and Section B with identical content.
+ * Client spec: both 25×14 mm halves show the same text.
+ */
+export function duplicateFieldsToBothSections(fields: LayoutField[]): LayoutField[] {
+  const sectionWidth = JEWELLERY_SECTION_WIDTH_MM - 1;
+  const result: LayoutField[] = [];
+  const handled = new Set<string>();
+
+  for (const field of fields) {
+    if (field.type === 'logo') {
+      result.push(field);
+      continue;
+    }
+
+    const identity = field.fieldKey ?? field.id;
+    if (handled.has(identity)) continue;
+    handled.add(identity);
+
+    const base: LayoutField = {
+      ...field,
+      width: Math.min(field.width, sectionWidth),
+      x: field.x ?? 0.5,
+    };
+
+    result.push({ ...base, id: `${field.id}_a`, section: 'A' as LayoutSection });
+    result.push({ ...base, id: `${field.id}_b`, section: 'B' as LayoutSection });
+  }
+
+  return result;
+}
+
+function finalizeJewelleryFields(fields: LayoutField[], pageConfig?: PageConfig): LayoutField[] {
+  if (pageConfig && isJewelleryTemplate(pageConfig)) {
+    return duplicateFieldsToBothSections(fields);
+  }
+  return fields;
+}
+
+/**
+ * Auto-place category showInLabel fields inside the 50×14mm broad sticker area.
+ * Fields stack top-to-bottom; duplicated to A+B at finalize time.
  */
 export function buildAutoLayoutFields(category: Category, pageConfig?: PageConfig): LayoutField[] {
   const jewellery = pageConfig ? isJewelleryTemplate(pageConfig) : true;
@@ -23,7 +65,7 @@ export function buildAutoLayoutFields(category: Category, pageConfig?: PageConfi
 
   const toPlace = jewellery ? printable.slice(0, JEWELLERY_MAX_LINES) : printable;
 
-  return toPlace.map((cf, i) => {
+  const fields = toPlace.map((cf, i) => {
     let section: LayoutSection = 'full';
     let y = 0.3 + i * 4;
     let width = 28;
@@ -42,7 +84,7 @@ export function buildAutoLayoutFields(category: Category, pageConfig?: PageConfi
 
     return {
       id: `cat_${cf.id}`,
-      type: 'categoryField',
+      type: 'categoryField' as const,
       fieldKey: cf.key,
       label: cf.name,
       categoryId: category._id,
@@ -57,6 +99,8 @@ export function buildAutoLayoutFields(category: Category, pageConfig?: PageConfi
       alignment,
     };
   });
+
+  return finalizeJewelleryFields(fields, pageConfig);
 }
 
 export { JEWELLERY_BROAD_HEIGHT_MM, JEWELLERY_BROAD_WIDTH_MM, JEWELLERY_MAX_LINES };
@@ -78,7 +122,10 @@ export function resolveLayoutFieldsForCategory(
   if (category.defaultLayoutId && layouts?.length) {
     const byDefault = layouts.find((l) => l._id === category.defaultLayoutId);
     if (byDefault?.config.fields?.length) {
-      return filterFieldsForCategory(byDefault.config.fields, category._id);
+      return finalizeJewelleryFields(
+        filterFieldsForCategory(byDefault.config.fields, category._id),
+        pageConfig
+      );
     }
   }
 
@@ -87,7 +134,10 @@ export function resolveLayoutFieldsForCategory(
       (l) => l.templateId === templateId && l.config.categoryId === category._id
     );
     if (bound?.config.fields?.length) {
-      return filterFieldsForCategory(bound.config.fields, category._id);
+      return finalizeJewelleryFields(
+        filterFieldsForCategory(bound.config.fields, category._id),
+        pageConfig
+      );
     }
   }
 

@@ -10,7 +10,8 @@ import { formatFieldValue } from '../lib/category';
 function productSummary(label: Label, category?: Category): string {
   if (!category) return label.name;
   const parts = category.config.fields
-    .filter((f) => f.showInSearch || f.key === 'design_number' || f.key === 'price')
+    .filter((f) => f.showInSearch || f.showInLabel)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
     .slice(0, 3)
     .map((f) => formatFieldValue(label.values[f.key], f.datatype))
     .filter(Boolean);

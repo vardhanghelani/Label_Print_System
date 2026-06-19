@@ -1,0 +1,779 @@
+{
+  "timestamp": "2026-06-19T08:43:17.334Z",
+  "geometry": {
+    "sheetSize": {
+      "width": 110,
+      "height": 197
+    },
+    "stickerCount": 22,
+    "topMargin": 4,
+    "bottomMargin": 10.7,
+    "pairHeight": 16.5,
+    "validation": {
+      "valid": true,
+      "issues": []
+    },
+    "sticker22": {
+      "broadY": 183,
+      "broadBottom": 197,
+      "fitsInPage": true
+    },
+    "allStickerCoordinates": [
+      {
+        "stickerNumber": 1,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 4,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 9.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 4,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 4,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 18
+      },
+      {
+        "stickerNumber": 2,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 18,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 23.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 18,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 18,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 32
+      },
+      {
+        "stickerNumber": 3,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 20.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 26.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 20.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 20.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 34.5
+      },
+      {
+        "stickerNumber": 4,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 34.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 40.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 34.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 34.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 48.5
+      },
+      {
+        "stickerNumber": 5,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 37,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 42.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 37,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 37,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 51
+      },
+      {
+        "stickerNumber": 6,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 51,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 56.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 51,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 51,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 65
+      },
+      {
+        "stickerNumber": 7,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 53.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 59.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 53.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 53.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 67.5
+      },
+      {
+        "stickerNumber": 8,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 67.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 73.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 67.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 67.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 81.5
+      },
+      {
+        "stickerNumber": 9,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 70,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 75.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 70,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 70,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 84
+      },
+      {
+        "stickerNumber": 10,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 84,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 89.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 84,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 84,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 98
+      },
+      {
+        "stickerNumber": 11,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 86.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 92.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 86.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 86.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 100.5
+      },
+      {
+        "stickerNumber": 12,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 100.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 106.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 100.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 100.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 114.5
+      },
+      {
+        "stickerNumber": 13,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 103,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 108.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 103,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 103,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 117
+      },
+      {
+        "stickerNumber": 14,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 117,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 122.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 117,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 117,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 131
+      },
+      {
+        "stickerNumber": 15,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 119.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 125.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 119.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 119.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 133.5
+      },
+      {
+        "stickerNumber": 16,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 133.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 139.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 133.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 133.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 147.5
+      },
+      {
+        "stickerNumber": 17,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 136,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 141.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 136,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 136,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 150
+      },
+      {
+        "stickerNumber": 18,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 150,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 155.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 150,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 150,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 164
+      },
+      {
+        "stickerNumber": 19,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 152.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 158.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 152.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 152.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 166.5
+      },
+      {
+        "stickerNumber": 20,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 166.5,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 172.25,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 166.5,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 166.5,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 180.5
+      },
+      {
+        "stickerNumber": 21,
+        "orientation": "broad-left",
+        "broadArea": {
+          "x": 5,
+          "y": 169,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 55,
+          "y": 174.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 5,
+          "y": 169,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 30,
+          "y": 169,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 183
+      },
+      {
+        "stickerNumber": 22,
+        "orientation": "broad-right",
+        "broadArea": {
+          "x": 54,
+          "y": 183,
+          "width": 50,
+          "height": 14
+        },
+        "tailArea": {
+          "x": 5,
+          "y": 188.75,
+          "width": 49,
+          "height": 2.5
+        },
+        "sectionA": {
+          "x": 54,
+          "y": 183,
+          "width": 25,
+          "height": 14
+        },
+        "sectionB": {
+          "x": 79,
+          "y": 183,
+          "width": 25,
+          "height": 14
+        },
+        "broadBottom": 197
+      }
+    ]
+  },
+  "database": {
+    "template": {
+      "name": "Jewellery Tag Sheet 22",
+      "pageWidth": 110,
+      "pageHeight": 197,
+      "stickerCount": 22,
+      "topMargin": 4
+    },
+    "labelCount": 4,
+    "labelSamples": [
+      {
+        "_id": "6a33de019ee8c6c4edda3b17",
+        "name": "Ring R1001",
+        "__v": 0,
+        "createdAt": "2026-06-18T12:01:05.085Z",
+        "updatedAt": "2026-06-18T12:01:05.085Z",
+        "categoryId": "6a34fa9146f0088dab6cfe4d",
+        "values": {
+          "design_number": "R1001",
+          "weight": "4.350 gm",
+          "price": "₹56,000",
+          "purity": "22KT",
+          "product_name": "Gold Ring"
+        }
+      },
+      {
+        "_id": "6a33de019ee8c6c4edda3b18",
+        "name": "Necklace N2002",
+        "__v": 0,
+        "createdAt": "2026-06-18T12:01:05.085Z",
+        "updatedAt": "2026-06-18T12:01:05.085Z",
+        "categoryId": "6a34fa9146f0088dab6cfe4d",
+        "values": {
+          "design_number": "N2002",
+          "weight": "12.800 gm",
+          "price": "₹1,25,000",
+          "purity": "18KT",
+          "product_name": "Diamond Necklace"
+        }
+      },
+      {
+        "_id": "6a33de019ee8c6c4edda3b19",
+        "name": "Bracelet B3003",
+        "__v": 0,
+        "createdAt": "2026-06-18T12:01:05.085Z",
+        "updatedAt": "2026-06-18T12:01:05.085Z",
+        "categoryId": "6a34fa9146f0088dab6cfe4d",
+        "values": {
+          "design_number": "B3003",
+          "weight": "8.200 gm",
+          "price": "₹78,500",
+          "purity": "22KT",
+          "product_name": "Gold Bracelet"
+        }
+      },
+      {
+        "_id": "6a33de019ee8c6c4edda3b1a",
+        "name": "Earrings E4004",
+        "__v": 0,
+        "createdAt": "2026-06-18T12:01:05.085Z",
+        "updatedAt": "2026-06-18T12:01:05.085Z",
+        "categoryId": "6a34fa9146f0088dab6cfe4d",
+        "values": {
+          "design_number": "E4004",
+          "weight": "3.100 gm",
+          "price": "₹42,000",
+          "purity": "22KT",
+          "product_name": "Gold Earrings"
+        }
+      }
+    ],
+    "categoryCount": 1,
+    "categories": [
+      {
+        "name": "Legacy Jewellery",
+        "fieldCount": 7,
+        "fieldTypes": [
+          {
+            "name": "Design Number",
+            "key": "design_number",
+            "datatype": "text"
+          },
+          {
+            "name": "Weight",
+            "key": "weight",
+            "datatype": "text"
+          },
+          {
+            "name": "Purity",
+            "key": "purity",
+            "datatype": "text"
+          },
+          {
+            "name": "Price",
+            "key": "price",
+            "datatype": "text"
+          },
+          {
+            "name": "Making Charge",
+            "key": "making_charge",
+            "datatype": "text"
+          },
+          {
+            "name": "SKU",
+            "key": "sku",
+            "datatype": "text"
+          },
+          {
+            "name": "Notes",
+            "key": "notes",
+            "datatype": "text"
+          }
+        ]
+      }
+    ]
+  },
+  "remainingKnownIssues": []
+}

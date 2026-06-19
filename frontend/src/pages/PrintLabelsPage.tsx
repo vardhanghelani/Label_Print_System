@@ -20,7 +20,7 @@ import { PrintConfirmModal } from '../components/PrintConfirmModal';
 import { PrintSuccessScreen } from '../components/PrintSuccessScreen';
 import { WastageCounter } from '../components/WastageCounter';
 import { SheetPreviewFrame } from '../components/PreviewFrame';
-import { exportVectorLabelPdf } from '../lib/vectorLabelPdf';
+import { exportVectorLabelPdf, PrintPipelineError } from '../lib/vectorLabelPdf';
 import { PREVIEW_SCALE } from '../lib/units';
 import { computePrintPositions, filterLabels, productSummaryLine } from '../types';
 import { clearSheetState, saveSheetState } from '../lib/sheetState';
@@ -28,6 +28,7 @@ import {
   DEMO_PRODUCTS,
   DEMO_TEMPLATE,
   DEMO_LAYOUT,
+  DEMO_CATEGORY,
   buildDemoPreview,
   getDemoLabelData,
   productDisplayLine,
@@ -37,9 +38,8 @@ import {
   resolveJewelleryLayout,
   JEWELLERY_SHEET_NAME,
 } from '../lib/jewellerySheet';
-import { createCategoryFieldsResolver, resolveLayoutFieldsForCategory } from '../lib/categoryPrintLayout';
 import { buildWastageStats } from '../lib/wastageStats';
-import type { Label, Template, PrintJob, Layout, Category } from '../types';
+import type { Label, Template, PrintJob, Layout, Category, ProductValues } from '../types';
 
 interface PopulatedJob extends Omit<PrintJob, 'templateId' | 'labelIds'> {
   templateId: Template | string;
@@ -145,9 +145,13 @@ export default function PrintLabelsPage() {
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, Category>();
+    if (isDemoMode) {
+      map.set(DEMO_CATEGORY._id, DEMO_CATEGORY);
+      return map;
+    }
     (categories ?? []).forEach((c) => map.set(c._id, c));
     return map;
-  }, [categories]);
+  }, [categories, isDemoMode]);
 
   const summarizeProduct = useCallback(
     (label: Label) => {
@@ -203,17 +207,6 @@ export default function PrintLabelsPage() {
 
   const pageConfig = useMemo(() => activeTemplate.config, [activeTemplate]);
 
-  const resolveCategoryFields = useMemo(
-    () =>
-      createCategoryFieldsResolver(
-        categoryMap,
-        layouts,
-        templateId ?? activeTemplate._id,
-        pageConfig
-      ),
-    [categoryMap, layouts, templateId, activeTemplate._id, pageConfig]
-  );
-
   const printPositions = useMemo(
     () =>
       pageConfig && selectedLabelIds.length
@@ -265,25 +258,6 @@ export default function PrintLabelsPage() {
     if (!id || isDemoMode) return null;
     return labels?.find((l) => l._id === id) ?? null;
   }, [selectedLabelIds, isDemoMode, labels]);
-
-  const firstCategoryFields = useMemo(() => {
-    if (isDemoMode) return activeLayout.config.fields;
-    return resolveLayoutFieldsForCategory(
-      firstLabel ? categoryMap.get(firstLabel.categoryId) : undefined,
-      layouts,
-      templateId ?? activeTemplate._id,
-      pageConfig
-    );
-  }, [
-    isDemoMode,
-    activeLayout.config.fields,
-    firstLabel,
-    categoryMap,
-    layouts,
-    templateId,
-    activeTemplate._id,
-    pageConfig,
-  ]);
 
   const saveHistoryMutation = useMutation({
     mutationFn: api.printJobs.create,
@@ -407,57 +381,67 @@ export default function PrintLabelsPage() {
       const labelId = selectedLabelIds[i];
       const localLabel = labels?.find((l) => l._id === labelId);
       const apiEntry = data.positionLabelMap.find((p) => p.position === pos);
+      const apiLabel = apiEntry?.label;
+      const values =
+        localLabel?.values ??
+        (apiLabel && typeof apiLabel === 'object' && 'values' in apiLabel
+          ? apiLabel.values
+          : apiLabel) ??
+        null;
       return {
         position: pos,
-        label: localLabel?.values ?? apiEntry?.label?.values ?? null,
-        categoryId: localLabel?.categoryId ?? apiEntry?.label?.categoryId,
+        label: values as ProductValues | null,
+        categoryId: localLabel?.categoryId ?? apiEntry?.categoryId,
       };
     });
 
+    const exportCalibration = { ...data.calibration, ...calibration };
+
     // #region agent log
-    const prePrintPayload = {
-      products: positionLabelMap.map((p) => ({ position: p.position, values: p.label })),
-      layout: data.layout.config.fields.map((f) => ({
-        id: f.id,
-        key: f.fieldKey,
-        section: f.section,
-      })),
-      stickers: data.printPositions,
-      pageSize: {
-        w: data.template.config.pageWidth,
-        h: data.template.config.pageHeight,
-      },
-    };
-    console.log('[print-debug] pre-export data', prePrintPayload);
     fetch('http://127.0.0.1:7355/ingest/c86470b8-c57e-4f6c-891d-dfb865bf7897', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '602ec9' },
       body: JSON.stringify({
         sessionId: '602ec9',
         location: 'PrintLabelsPage.tsx:handlePrintConfirm',
-        message: 'Pre-export product/layout data',
-        data: prePrintPayload,
+        message: 'Pre-export state',
+        data: {
+          pageWidth: data.template.config.pageWidth,
+          pageHeight: data.template.config.pageHeight,
+          stickerCount: data.template.config.stickerCount,
+          printPositions: data.printPositions,
+          labelSample: positionLabelMap.slice(0, 2),
+        },
         hypothesisId: 'H-A',
         timestamp: Date.now(),
-        runId: 'vector-pdf',
+        runId: 'print-flow',
       }),
     }).catch(() => {});
     // #endregion
 
-    const exportCalibration = { ...data.calibration, ...calibration };
-
-    exportVectorLabelPdf({
-      pageConfig: data.template.config,
-      layoutConfig: data.layout.config,
-      calibration: exportCalibration,
-      printPositions: data.printPositions,
-      positionLabelMap,
-      categoriesById: categoryMap,
-      layouts: layouts ?? undefined,
-      templateId: templateId ?? activeTemplate._id,
-      brandName: shop?.brandName,
-      filename: 'labels.pdf',
-    });
+    try {
+      exportVectorLabelPdf({
+        pageConfig: data.template.config,
+        calibration: exportCalibration,
+        printPositions: data.printPositions,
+        positionLabelMap,
+        categoriesById: categoryMap,
+        layouts: layouts ?? undefined,
+        templateId: templateId ?? activeTemplate._id,
+        brandName: shop?.brandName,
+        filename: 'labels.pdf',
+      });
+    } catch (err) {
+      const message =
+        err instanceof PrintPipelineError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'PDF export failed.';
+      setConfirmError(message);
+      setShowConfirm(true);
+      return;
+    }
 
     setSuccessInfo({
       labelCount: printPositions.length,
@@ -634,7 +618,7 @@ export default function PrintLabelsPage() {
             <p className="mb-2 text-xl text-slate-600">
               Tap the first empty sticker where you want to start.
             </p>
-            <p className="mb-6 text-lg font-medium text-brand-700">{JEWELLERY_SHEET_NAME} · 137×172 mm · 14 stickers</p>
+            <p className="mb-6 text-lg font-medium text-brand-700">{JEWELLERY_SHEET_NAME} · 110×197 mm · 22 stickers</p>
 
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <button
@@ -696,11 +680,13 @@ export default function PrintLabelsPage() {
               <div className="mb-6 preview-grid">
                 <SingleStickerPreview
                   pageConfig={pageConfig}
-                  layoutConfig={{ fields: firstCategoryFields }}
                   labelData={firstLabelData}
                   brandName={storeName}
-                  logoUrl={shop?.logoUrl}
-                  category={firstLabel ? categoryMap.get(firstLabel.categoryId) : undefined}
+                  category={firstLabel ? categoryMap.get(firstLabel.categoryId) : isDemoMode ? DEMO_CATEGORY : undefined}
+                  calibration={calibration}
+                  layouts={isDemoMode ? undefined : (layouts ?? undefined)}
+                  templateId={templateId ?? activeTemplate._id}
+                  stickerNumber={printPositions[0] ?? 1}
                 />
                 <SheetPreviewFrame
                   pageWidthMm={pageConfig.pageWidth}
@@ -728,11 +714,8 @@ export default function PrintLabelsPage() {
                       };
                     })}
                     categoriesById={categoryMap}
-                    resolveFieldsForPosition={(_pos, categoryId) =>
-                      isDemoMode
-                        ? activeLayout.config.fields
-                        : resolveCategoryFields(categoryId)
-                    }
+                    templateId={templateId ?? activeTemplate._id}
+                    layouts={isDemoMode ? undefined : (layouts ?? undefined)}
                     brandName={storeName}
                     logoUrl={shop?.logoUrl}
                     showGrid
@@ -781,11 +764,13 @@ export default function PrintLabelsPage() {
             firstLabelData && pageConfig && activeLayout ? (
               <SingleStickerPreview
                 pageConfig={pageConfig}
-                layoutConfig={{ fields: firstCategoryFields }}
                 labelData={firstLabelData}
                 brandName={storeName}
-                logoUrl={shop?.logoUrl}
-                category={firstLabel ? categoryMap.get(firstLabel.categoryId) : undefined}
+                category={firstLabel ? categoryMap.get(firstLabel.categoryId) : isDemoMode ? DEMO_CATEGORY : undefined}
+                calibration={calibration}
+                layouts={isDemoMode ? undefined : (layouts ?? undefined)}
+                templateId={templateId ?? activeTemplate._id}
+                stickerNumber={printPositions[0] ?? 1}
                 title="Actual Sticker Preview"
               />
             ) : undefined

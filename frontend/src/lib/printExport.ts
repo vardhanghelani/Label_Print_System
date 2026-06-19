@@ -2,7 +2,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import type { PageConfig } from '../types';
 
-let activePageSize = '137mm 172mm';
+let activePageSize = '110mm 197mm';
 
 export function setPrintPageSize(pageWidth: number, pageHeight: number): void {
   activePageSize = `${pageWidth}mm ${pageHeight}mm`;

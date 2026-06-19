@@ -2,42 +2,126 @@ import { Template } from '../models/Template.js';
 import { Layout } from '../models/Layout.js';
 import { Settings } from '../models/Settings.js';
 import { buildInterlockPageConfig } from '../types/index.js';
+import { validateInterlockGeometry } from '../types/geometryValidator.js';
+import { debugLogBackend } from '../utils/debugLog.js';
 
-export const JEWELLERY_SHEET_NAME = 'Jewellery Tag Sheet 14';
+export const JEWELLERY_SHEET_NAME = 'Jewellery Tag Sheet 22';
 export const JEWELLERY_LAYOUT_NAME = 'Default Jewellery Label';
 
+export const LEGACY_SHEET_NAMES = ['Jewellery Tag Sheet 14', JEWELLERY_SHEET_NAME];
+
+const SHEET_DESCRIPTION = '110×197 mm interlocking jewellery sheet — 22 stickers';
+
+const TARGET_PAGE = { pageWidth: 110, pageHeight: 197 };
+const TARGET_STICKER_COUNT = 22;
+
 export function buildJewellerySheetConfig() {
-  return buildInterlockPageConfig(137, 172, {
-    stickerCount: 14,
-    topMargin: 13,
-    bottomMargin: 13,
+  return buildInterlockPageConfig(TARGET_PAGE.pageWidth, TARGET_PAGE.pageHeight, {
+    stickerCount: TARGET_STICKER_COUNT,
+    topMargin: 4,
+    bottomMargin: 10.7,
     leftMargin: 5,
     rightMargin: 5,
-    broadWidth: 62,
-    broadHeight: 9,
-    tailWidth: 61,
-    tailHeight: 5,
-    sectionA: { x: 0, y: 0, width: 31.1, height: 9 },
-    sectionB: { x: 31.1, y: 0, width: 30.9, height: 9 },
-    verticalPitch: 9,
+    broadWidth: 50,
+    broadHeight: 14,
+    tailWidth: 49,
+    tailHeight: 2.5,
+    sectionA: { x: 0, y: 0, width: 25, height: 14 },
+    sectionB: { x: 25, y: 0, width: 25, height: 14 },
   });
 }
 
-/** Ensures the single predefined jewellery sheet exists and is set as shop default */
-export async function ensureJewellerySheet(): Promise<{ templateId: string; layoutId: string }> {
-  const config = buildJewellerySheetConfig();
+function geometryDiffersFromCanonical(config: {
+  pageWidth?: number;
+  pageHeight?: number;
+  stickerCount?: number;
+  geometry?: ReturnType<typeof buildJewellerySheetConfig>['geometry'];
+}): boolean {
+  const canonical = buildJewellerySheetConfig();
+  return (
+    config.pageWidth !== TARGET_PAGE.pageWidth ||
+    config.pageHeight !== TARGET_PAGE.pageHeight ||
+    config.stickerCount !== TARGET_STICKER_COUNT ||
+    JSON.stringify(config.geometry) !== JSON.stringify(canonical.geometry)
+  );
+}
 
-  let template = await Template.findOne({ name: JEWELLERY_SHEET_NAME });
+function isLegacyTemplateConfig(config: {
+  pageWidth?: number;
+  pageHeight?: number;
+  stickerCount?: number;
+  geometry?: ReturnType<typeof buildJewellerySheetConfig>['geometry'];
+}): boolean {
+  return (
+    config.pageWidth === 137 ||
+    config.pageHeight === 172 ||
+    config.stickerCount === 14 ||
+    geometryDiffersFromCanonical(config)
+  );
+}
+
+async function findJewelleryTemplate() {
+  return Template.findOne({
+    $or: [
+      { name: { $in: LEGACY_SHEET_NAMES } },
+      { 'config.pageWidth': 137, 'config.pageHeight': 172 },
+      { 'config.stickerCount': 14 },
+      { 'config.layoutType': 'jewellery-interlock' },
+    ],
+  }).sort({ updatedAt: -1 });
+}
+
+export interface EnsureJewellerySheetResult {
+  templateId: string;
+  layoutId: string;
+  migrated: boolean;
+  previousName?: string;
+  previousPageSize?: { width: number; height: number };
+  previousStickerCount?: number;
+  validation: { valid: boolean; issueCount: number };
+}
+
+/** Idempotent: ensures 22-sticker template exists, migrates legacy 14-sticker records */
+export async function ensureJewellerySheet(): Promise<EnsureJewellerySheetResult> {
+  const config = buildJewellerySheetConfig();
+  const validation = validateInterlockGeometry(
+    TARGET_PAGE.pageWidth,
+    TARGET_PAGE.pageHeight,
+    config.geometry!
+  );
+
+  let template = await findJewelleryTemplate();
+  let migrated = false;
+  let previousName: string | undefined;
+  let previousPageSize: { width: number; height: number } | undefined;
+  let previousStickerCount: number | undefined;
+
   if (!template) {
     template = await Template.create({
       name: JEWELLERY_SHEET_NAME,
-      description: '137×172 mm interlocking jewellery sheet — 14 stickers',
+      description: SHEET_DESCRIPTION,
       config,
     });
+    migrated = true;
   } else {
-    template.config = config;
-    template.description = '137×172 mm interlocking jewellery sheet — 14 stickers';
-    await template.save();
+    previousName = template.name;
+    previousPageSize = {
+      width: template.config?.pageWidth ?? 0,
+      height: template.config?.pageHeight ?? 0,
+    };
+    previousStickerCount = template.config?.stickerCount;
+
+    const needsUpdate =
+      template.name !== JEWELLERY_SHEET_NAME ||
+      isLegacyTemplateConfig(template.config ?? {});
+
+    if (needsUpdate) {
+      migrated = true;
+      template.name = JEWELLERY_SHEET_NAME;
+      template.config = config;
+      template.description = SHEET_DESCRIPTION;
+      await template.save();
+    }
   }
 
   let layout = await Layout.findOne({ name: JEWELLERY_LAYOUT_NAME, templateId: template._id });
@@ -60,8 +144,32 @@ export async function ensureJewellerySheet(): Promise<{ templateId: string; layo
     { upsert: true }
   );
 
-  return {
+  const result: EnsureJewellerySheetResult = {
     templateId: String(template._id),
     layoutId: String(layout._id),
+    migrated,
+    previousName,
+    previousPageSize,
+    previousStickerCount,
+    validation: { valid: validation.valid, issueCount: validation.issues.length },
   };
+
+  // #region agent log
+  debugLogBackend(
+    'ensureJewellerySheet.ts:complete',
+    'Jewellery sheet migration complete',
+    {
+      ...result,
+      templateName: JEWELLERY_SHEET_NAME,
+      pageWidth: config.pageWidth,
+      pageHeight: config.pageHeight,
+      stickerCount: config.stickerCount,
+      validationIssues: validation.issues.map((i) => i.message),
+      sticker22: validation.stickers.find((s) => s.stickerNumber === 22),
+    },
+    'H-A'
+  );
+  // #endregion
+
+  return result;
 }

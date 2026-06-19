@@ -1,23 +1,36 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { api } from '../services/api';
 import { PageHeader, LoadingSpinner } from '../components/Layout';
-import type { LayoutField, PageConfig, Category } from '../types';
+import type { LayoutField, PageConfig, Category, CategoryFieldDefinition } from '../types';
 import { isJewelleryTemplate, resolveFieldValue } from '../types';
 import type { InterlockSheetGeometry } from '../lib/geometryBuilder';
 import { mmToPx, PREVIEW_SCALE } from '../lib/units';
 import { PreviewFrame } from '../components/PreviewFrame';
 
-const SAMPLE_VALUES: Record<string, string> = {
-  design_number: 'R1001',
-  weight: '4.350 gm',
-  purity: '22K',
-  price: '₹56,000',
-  size: '12',
-  length: '18 inch',
-};
+function sampleValueForField(field: CategoryFieldDefinition): string {
+  switch (field.datatype) {
+    case 'currency':
+      return '₹5,000';
+    case 'number':
+      return '4.50';
+    case 'dropdown':
+      return field.options?.[0] ?? 'Option';
+    default:
+      return `Sample ${field.name}`;
+  }
+}
+
+function buildSampleValues(category: Category | undefined): Record<string, string> {
+  if (!category?.config.fields.length) return { sample: 'Sample' };
+  const values: Record<string, string> = {};
+  for (const f of category.config.fields) {
+    values[f.key] = sampleValueForField(f);
+  }
+  return values;
+}
 
 function generateId() {
   return `f_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -99,6 +112,7 @@ export default function LayoutDesignerPage() {
   };
 
   const selectedCategory = categories?.find((c) => c._id === layoutCategoryId);
+  const sampleValues = useMemo(() => buildSampleValues(selectedCategory), [selectedCategory]);
   const labelFields =
     selectedCategory?.config.fields.filter((f) => f.showInLabel).sort((a, b) => a.sortOrder - b.sortOrder) ??
     [];
@@ -504,7 +518,7 @@ export default function LayoutDesignerPage() {
                       <GripVertical className="absolute -left-1 top-0 h-full w-3 text-slate-400" />
                       <span className="block truncate px-1">
                         {(() => {
-                          const val = resolveFieldValue(field, SAMPLE_VALUES);
+                          const val = resolveFieldValue(field, sampleValues);
                           if (val) return val;
                           if (field.type === 'text' || field.type === 'staticBranding') return field.staticText;
                           return `[${field.label}]`;

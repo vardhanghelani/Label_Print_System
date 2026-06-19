@@ -19,7 +19,7 @@ const JEWELLERY_TEMPLATE_CONFIG = buildJewellerySheetConfig();
 const SAMPLE_TEMPLATES = [
   {
     name: JEWELLERY_SHEET_NAME,
-    description: '137×172 mm interlocking jewellery sheet — 14 stickers',
+    description: '110×197 mm interlocking jewellery sheet — 22 stickers',
     config: JEWELLERY_TEMPLATE_CONFIG,
   },
 ];
@@ -49,29 +49,27 @@ function field(
 }
 
 const RING_FIELDS: CategoryFieldDefinition[] = [
-  field('rf1', 'Design Number', 'design_number', 'text', { showInSearch: true, required: true, sortOrder: 0 }),
-  field('rf2', 'Weight', 'weight', 'text', { showInLabel: true, sortOrder: 1 }),
-  field('rf3', 'Size', 'size', 'number', { sortOrder: 2 }),
-  field('rf4', 'Purity', 'purity', 'dropdown', { options: ['18K', '22K', '24K'], sortOrder: 3 }),
-  field('rf5', 'Price', 'price', 'currency', { showInSearch: true, sortOrder: 4 }),
-  field('rf6', 'Making Charge', 'making_charge', 'currency', { sortOrder: 5 }),
+  field('rf1', 'Serial Number', 'serial_number', 'text', { showInSearch: true, required: true, sortOrder: 0 }),
+  field('rf2', 'Weight', 'weight', 'number', { showInLabel: true, sortOrder: 1 }),
+  field('rf3', 'Price', 'price', 'currency', { showInSearch: true, sortOrder: 2 }),
 ];
 
-const NECKLACE_FIELDS: CategoryFieldDefinition[] = [
-  field('nf1', 'Design Number', 'design_number', 'text', { showInSearch: true, required: true, sortOrder: 0 }),
-  field('nf2', 'Length', 'length', 'text', { sortOrder: 1 }),
-  field('nf3', 'Weight', 'weight', 'text', { sortOrder: 2 }),
-  field('nf4', 'Purity', 'purity', 'dropdown', { options: ['18K', '22K'], sortOrder: 3 }),
-  field('nf5', 'Price', 'price', 'currency', { showInSearch: true, sortOrder: 4 }),
+const PENDANT_FIELDS: CategoryFieldDefinition[] = [
+  field('pf1', 'Stone Type', 'stone_type', 'text', { showInSearch: true, required: true, sortOrder: 0 }),
+  field('pf2', 'Length', 'length', 'number', { sortOrder: 1 }),
+  field('pf3', 'Price', 'price', 'currency', { showInSearch: true, sortOrder: 2 }),
+];
+
+const CHAIN_FIELDS: CategoryFieldDefinition[] = [
+  field('cf1', 'Item Code', 'item_code', 'text', { showInSearch: true, required: true, sortOrder: 0 }),
+  field('cf2', 'Length', 'length', 'number', { sortOrder: 1 }),
+  field('cf3', 'Price', 'price', 'currency', { showInSearch: true, sortOrder: 2 }),
 ];
 
 const LEGACY_FIELDS: CategoryFieldDefinition[] = [
-  field('lf1', 'Design Number', 'design_number', 'text', { showInSearch: true, sortOrder: 0 }),
-  field('lf2', 'Weight', 'weight', 'text', { sortOrder: 1 }),
-  field('lf3', 'Purity', 'purity', 'text', { sortOrder: 2 }),
-  field('lf4', 'Price', 'price', 'text', { showInSearch: true, sortOrder: 3 }),
-  field('lf5', 'SKU', 'sku', 'text', { showInSearch: true, sortOrder: 4 }),
-  field('lf6', 'Notes', 'notes', 'multiline', { sortOrder: 5 }),
+  field('lf1', 'Legacy Code', 'legacy_code', 'text', { showInSearch: true, sortOrder: 0 }),
+  field('lf2', 'Notes', 'notes', 'text', { sortOrder: 1 }),
+  field('lf3', 'Amount', 'amount', 'currency', { showInSearch: true, sortOrder: 2 }),
 ];
 
 async function seed() {
@@ -95,10 +93,16 @@ async function seed() {
     config: { fields: RING_FIELDS },
   });
 
-  const necklaceCategory = await Category.create({
-    name: 'Necklace',
-    description: 'Necklaces and chains',
-    config: { fields: NECKLACE_FIELDS },
+  const pendantCategory = await Category.create({
+    name: 'Pendant',
+    description: 'Pendants and lockets',
+    config: { fields: PENDANT_FIELDS },
+  });
+
+  const chainCategory = await Category.create({
+    name: 'Chain',
+    description: 'Gold chains',
+    config: { fields: CHAIN_FIELDS },
   });
 
   const legacyCategory = await Category.create({
@@ -110,118 +114,46 @@ async function seed() {
   const defaultLayout = await Layout.create({
     name: JEWELLERY_LAYOUT_NAME,
     templateId: defaultTemplate._id,
-    config: {
-      categoryId: ringCategory._id,
-      fields: [
-        {
-          id: 'f1',
-          type: 'categoryField',
-          fieldKey: 'design_number',
-          label: 'Design Number',
-          section: 'A',
-          x: 0.5,
-          y: 0.3,
-          width: 30,
-          height: 4,
-          fontSize: 7,
-          bold: true,
-          italic: false,
-          alignment: 'left',
-        },
-        {
-          id: 'f2',
-          type: 'categoryField',
-          fieldKey: 'weight',
-          label: 'Weight',
-          section: 'A',
-          x: 0.5,
-          y: 5,
-          width: 30,
-          height: 3.5,
-          fontSize: 6,
-          bold: false,
-          italic: false,
-          alignment: 'left',
-        },
-        {
-          id: 'f3',
-          type: 'categoryField',
-          fieldKey: 'price',
-          label: 'Price',
-          section: 'B',
-          x: 0.5,
-          y: 0.3,
-          width: 29.5,
-          height: 4,
-          fontSize: 7,
-          bold: true,
-          italic: false,
-          alignment: 'center',
-        },
-        {
-          id: 'f4',
-          type: 'categoryField',
-          fieldKey: 'purity',
-          label: 'Purity',
-          section: 'B',
-          x: 0.5,
-          y: 5,
-          width: 29.5,
-          height: 3.5,
-          fontSize: 6,
-          bold: false,
-          italic: false,
-          alignment: 'right',
-        },
-      ],
-    },
+    config: { fields: [] },
   });
 
   await Category.findByIdAndUpdate(ringCategory._id, { defaultLayoutId: defaultLayout._id });
 
   await Label.insertMany([
     {
-      name: 'Gold Ring R1001',
+      name: 'Gold Ring TEST001',
       categoryId: ringCategory._id,
       values: {
-        design_number: 'R1001',
-        weight: '4.350 gm',
-        size: 12,
-        purity: '22K',
-        price: '₹56,000',
-        making_charge: '₹2,500',
+        serial_number: 'TEST001',
+        weight: 4.5,
+        price: 5000,
       },
     },
     {
-      name: 'Diamond Necklace N2002',
-      categoryId: necklaceCategory._id,
+      name: 'Ruby Pendant P2002',
+      categoryId: pendantCategory._id,
       values: {
-        design_number: 'N2002',
-        length: '18 inch',
-        weight: '12.800 gm',
-        purity: '18K',
-        price: '₹1,25,000',
+        stone_type: 'Ruby',
+        length: 18,
+        price: 125000,
       },
     },
     {
-      name: 'Gold Bracelet B3003',
+      name: 'Gold Chain C3003',
+      categoryId: chainCategory._id,
+      values: {
+        item_code: 'C3003',
+        length: 20,
+        price: 78500,
+      },
+    },
+    {
+      name: 'Legacy Item',
       categoryId: legacyCategory._id,
       values: {
-        design_number: 'B3003',
-        weight: '8.200 gm',
-        purity: '22KT',
-        price: '₹78,500',
-      },
-    },
-    {
-      name: 'Gold Earrings E4004',
-      categoryId: ringCategory._id,
-      values: {
-        design_number: 'E4004',
-        weight: '3.100 gm',
-        size: 8,
-        purity: '22K',
-        price: '₹42,000',
+        legacy_code: 'LEG-001',
+        notes: 'Migrated product',
+        amount: 42000,
       },
     },
   ]);
@@ -246,7 +178,7 @@ async function seed() {
 
   console.log('Seed completed successfully');
   console.log(`  Templates: ${templates.length}`);
-  console.log(`  Categories: 3`);
+  console.log(`  Categories: 4 (Ring, Pendant, Chain, Legacy)`);
   console.log(`  Default layout: ${defaultLayout.name}`);
   console.log(`  Products: 4`);
 

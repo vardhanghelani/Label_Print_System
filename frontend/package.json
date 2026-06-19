@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:pdf": "tsx scripts/verifyPdfExport.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.64.1",

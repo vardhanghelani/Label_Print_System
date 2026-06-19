@@ -177,7 +177,7 @@ export interface PreviewData {
   layout: Layout;
   calibration: CalibrationSettings;
   printPositions: number[];
-  positionLabelMap: Array<{ position: number; label: Label | null }>;
+  positionLabelMap: Array<{ position: number; label: LabelData | null; categoryId?: string }>;
   usedPositions: number[];
   mode: PrintMode;
 }

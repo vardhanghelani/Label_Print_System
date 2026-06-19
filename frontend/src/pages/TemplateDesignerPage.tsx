@@ -129,7 +129,7 @@ export default function TemplateDesignerPage() {
           <div className="card border-2 border-amber-200 bg-amber-50">
             <h3 className="mb-2 text-lg font-semibold text-amber-900">Jewellery Interlock Sheet</h3>
             <p className="text-slate-700">
-              This template has {config.stickerCount ?? config.stickers?.length ?? 14} individually
+              This template has {config.stickerCount ?? config.stickers?.length ?? 22} individually
               addressable sticker positions. Sticker coordinates are defined in the template data
               and cannot be edited as a grid here.
             </p>

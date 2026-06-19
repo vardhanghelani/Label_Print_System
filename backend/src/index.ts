@@ -39,7 +39,14 @@ async function start() {
       console.log(`Migration: ${products} product(s), ${layouts} layout(s) updated.`);
     }
     const sheet = await ensureJewellerySheet();
-    console.log(`Jewellery sheet ready (template ${sheet.templateId}, layout ${sheet.layoutId}).`);
+    console.log(
+      `Jewellery sheet ready (template ${sheet.templateId}, layout ${sheet.layoutId}, migrated=${sheet.migrated}).`
+    );
+    if (sheet.migrated && sheet.previousPageSize) {
+      console.log(
+        `  Migrated from ${sheet.previousName} (${sheet.previousPageSize.width}×${sheet.previousPageSize.height}, ${sheet.previousStickerCount} stickers) → 110×197, 22 stickers.`
+      );
+    }
     app.listen(config.port, () => {
       console.log(`Server running on http://localhost:${config.port}`);
     });

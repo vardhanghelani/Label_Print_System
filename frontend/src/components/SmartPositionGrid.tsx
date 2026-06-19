@@ -107,7 +107,7 @@ export function SmartPositionGrid({
 
       {isJewellery && (
         <p className="mb-3 text-center text-base font-medium text-slate-600">
-          14 stickers in order — tap where you want to start printing
+          {total} stickers in order — tap where you want to start printing
         </p>
       )}
 
