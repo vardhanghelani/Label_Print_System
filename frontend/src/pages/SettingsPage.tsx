@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { PrintSheetPortal } from '../components/PrintSheetPortal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, Printer, Download } from 'lucide-react';
+import { Save, Printer, Download, Layers } from 'lucide-react';
 import { api } from '../services/api';
 import { usePrintStore } from '../stores/printStore';
 import { PageHeader, LoadingSpinner } from '../components/Layout';
@@ -13,6 +13,7 @@ import type { CalibrationSettings } from '../types';
 import { DEFAULT_CALIBRATION } from '../types';
 import { triggerBrowserPrint } from '../lib/printExport';
 import { exportCalibrationPdf } from '../lib/calibrationPdf';
+import { exportTraceSheetPdf } from '../lib/traceSheetPdf';
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
@@ -66,6 +67,11 @@ export default function SettingsPage() {
     exportCalibrationPdf(pageConfig, form, 'calibration-sheet.pdf');
   };
 
+  const handleDownloadTraceSheetPdf = () => {
+    if (!pageConfig) return;
+    exportTraceSheetPdf(pageConfig, form, 'trace-sheet.pdf');
+  };
+
   if (isLoading) return <LoadingSpinner />;
 
   return (
@@ -82,6 +88,24 @@ export default function SettingsPage() {
             Print the calibration sheet on plain paper. Hold it over your real sticker sheet.
             Adjust until crosshairs and borders align perfectly.
           </p>
+
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <h4 className="mb-1 font-semibold text-amber-900">Trace sheet (blank paper test)</h4>
+            <p className="mb-3 text-sm text-amber-800">
+              Download a full {pageConfig?.pageWidth ?? 110}×{pageConfig?.pageHeight ?? 197} mm outline with
+              all sticker boxes and sample text. Print on blank paper, place your tag sheet on top, and
+              trace — no wasted tags.
+            </p>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleDownloadTraceSheetPdf}
+              disabled={!pageConfig}
+            >
+              <Layers className="h-5 w-5" />
+              Download Trace Sheet PDF
+            </button>
+          </div>
 
           <form
             onSubmit={(e) => {

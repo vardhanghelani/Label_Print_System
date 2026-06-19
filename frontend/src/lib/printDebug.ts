@@ -1,11 +1,11 @@
 import type { PrintTextItem } from './labelRenderPipeline';
 
 export function isPrintDebugEnabled(): boolean {
-  const viteFlag =
+  return (
     typeof import.meta !== 'undefined' &&
     (import.meta as ImportMeta & { env?: { VITE_PRINT_DEBUG?: string } }).env?.VITE_PRINT_DEBUG ===
-      'true';
-  return viteFlag || (typeof process !== 'undefined' && process.env.PRINT_DEBUG === 'true');
+      'true'
+  );
 }
 
 export interface PrintDebugRow {

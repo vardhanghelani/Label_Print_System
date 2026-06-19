@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { flushSync } from 'react-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -801,10 +802,17 @@ export default function PrintLabelsPage() {
         QUICK PRINT
       </button>
 
-      <button type="button" className="btn-demo mb-10" onClick={handleDemoStart}>
+      <button type="button" className="btn-demo mb-4" onClick={handleDemoStart}>
         <PlayCircle className="h-8 w-8" />
         Try Demo Print
       </button>
+
+      <p className="mb-10 text-center text-sm text-slate-500">
+        <Link to="/settings" className="text-brand-600 underline hover:text-brand-700">
+          Download trace sheet
+        </Link>
+        {' '}— print on blank paper first, overlay your tag sheet to check alignment
+      </p>
 
       {wastageStats && wastageStats.stickersSavedThisMonth > 0 && (
         <div className="mb-8">
