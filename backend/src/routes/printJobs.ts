@@ -121,7 +121,7 @@ router.post(
     }));
 
     res.json({
-      template: { ...template.toObject(), config: pageConfig },
+      template: { ...template, config: pageConfig },
       layout,
       calibration,
       printPositions,
